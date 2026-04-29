@@ -41,6 +41,10 @@ const BOX_SESSION_THRESHOLD: Record<Card['box'], number> = {
   5: 3,
 }
 
+// Session threshold is a hard gate (a Box 4 card not yet due across sessions
+// must not surface — even as fallback). Exposure threshold is a soft gate:
+// under-exposed cards are excluded from "ready" but still qualify as fallback
+// when nothing in the session is fully ready yet.
 function meetsSessionThreshold(card: Card): boolean {
   return card.sessionsSinceLastSeen >= BOX_SESSION_THRESHOLD[card.box]
 }
