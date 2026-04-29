@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyAnswer } from './leitner'
+import { applyAnswer, bumpExposure } from './leitner'
 import type { Card } from './types'
 
 const baseCard = (overrides: Partial<Card> = {}): Card => ({
@@ -57,5 +57,19 @@ describe('applyAnswer', () => {
     const updated = applyAnswer(baseCard({ totalSeen: 10, totalCorrect: 7 }), { correct: false, rt: 2000 })
     expect(updated.totalSeen).toBe(11)
     expect(updated.totalCorrect).toBe(7)
+  })
+})
+
+describe('bumpExposure', () => {
+  it('increments exposuresSinceLastSeen', () => {
+    const updated = bumpExposure(baseCard({ exposuresSinceLastSeen: 4 }))
+    expect(updated.exposuresSinceLastSeen).toBe(5)
+  })
+
+  it('does not change box or other fields', () => {
+    const card = baseCard({ box: 3, totalSeen: 10 })
+    const updated = bumpExposure(card)
+    expect(updated.box).toBe(3)
+    expect(updated.totalSeen).toBe(10)
   })
 })

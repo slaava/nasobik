@@ -18,3 +18,7 @@ export function applyAnswer(
     totalCorrect: card.totalCorrect + (outcome.correct ? 1 : 0),
   }
 }
+
+export function bumpExposure(card: Card): Card {
+  return { ...card, exposuresSinceLastSeen: card.exposuresSinceLastSeen + 1 }
+}
