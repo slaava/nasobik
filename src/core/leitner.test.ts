@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyAnswer, bumpExposure } from './leitner'
+import { applyAnswer, bumpExposure, pickNext } from './leitner'
 import type { Card } from './types'
 
 const baseCard = (overrides: Partial<Card> = {}): Card => ({
@@ -71,5 +71,66 @@ describe('bumpExposure', () => {
     const updated = bumpExposure(card)
     expect(updated.box).toBe(3)
     expect(updated.totalSeen).toBe(10)
+  })
+})
+
+describe('pickNext', () => {
+  it('returns null if no cards', () => {
+    expect(pickNext([], { blockingTable: null })).toBeNull()
+  })
+
+  it('prefers a ready Box 1 card over a ready Box 2 card', () => {
+    const cards = [
+      baseCard({ id: 'a', box: 2, exposuresSinceLastSeen: 15 }),
+      baseCard({ id: 'b', box: 1, exposuresSinceLastSeen: 5 }),
+    ]
+    expect(pickNext(cards, { blockingTable: null })?.id).toBe('b')
+  })
+
+  it('skips a Box 1 card that has not waited 3 exposures yet', () => {
+    const cards = [
+      baseCard({ id: 'a', box: 1, exposuresSinceLastSeen: 1 }),
+      baseCard({ id: 'b', box: 2, exposuresSinceLastSeen: 12 }),
+    ]
+    expect(pickNext(cards, { blockingTable: null })?.id).toBe('b')
+  })
+
+  it('within a box, prefers the card with the highest exposuresSinceLastSeen', () => {
+    const cards = [
+      baseCard({ id: 'a', box: 1, exposuresSinceLastSeen: 4 }),
+      baseCard({ id: 'b', box: 1, exposuresSinceLastSeen: 7 }),
+    ]
+    expect(pickNext(cards, { blockingTable: null })?.id).toBe('b')
+  })
+
+  it('respects blockingTable: only picks cards where card.a matches', () => {
+    const cards = [
+      baseCard({ id: 'a', a: 5, b: 3, box: 1, exposuresSinceLastSeen: 10 }),
+      baseCard({ id: 'b', a: 7, b: 4, box: 1, exposuresSinceLastSeen: 10 }),
+    ]
+    expect(pickNext(cards, { blockingTable: 7 })?.id).toBe('b')
+  })
+
+  it('returns Box 3 cards in a fresh session (sessionsSinceLastSeen >= 1)', () => {
+    const cards = [
+      baseCard({ id: 'a', box: 3, sessionsSinceLastSeen: 1, exposuresSinceLastSeen: 0 }),
+    ]
+    expect(pickNext(cards, { blockingTable: null })?.id).toBe('a')
+  })
+
+  it('skips Box 4 cards that have not waited enough sessions', () => {
+    const cards = [
+      baseCard({ id: 'a', box: 4, sessionsSinceLastSeen: 1, exposuresSinceLastSeen: 0 }),
+    ]
+    expect(pickNext(cards, { blockingTable: null })).toBeNull()
+  })
+
+  it('falls back to the lowest-box card if nothing is "ready" (e.g., start of session)', () => {
+    const cards = [
+      baseCard({ id: 'a', box: 5, exposuresSinceLastSeen: 0 }),
+      baseCard({ id: 'b', box: 3, exposuresSinceLastSeen: 0, sessionsSinceLastSeen: 0 }),
+      baseCard({ id: 'c', box: 1, exposuresSinceLastSeen: 0 }),
+    ]
+    expect(pickNext(cards, { blockingTable: null })?.id).toBe('c')
   })
 })
