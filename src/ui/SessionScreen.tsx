@@ -74,30 +74,32 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-amber-50 p-4 gap-4">
-      <header className="flex items-center justify-between">
-        <Container {...sceneCtx} />
+    <div className="flex flex-col h-full bg-amber-50">
+      <section className="relative flex items-center justify-center basis-[40vh] shrink-0">
         <Hero {...sceneCtx} />
-      </header>
+        <div className="absolute top-3 left-3">
+          <Container {...sceneCtx} />
+        </div>
+      </section>
 
-      <main className="flex-1 flex flex-col items-center justify-center gap-6">
-        <h1 className="text-6xl font-bold text-amber-900 tabular-nums">
+      <section className="flex flex-col items-center justify-center gap-3 px-4 py-2">
+        <h1 className="text-5xl font-bold text-amber-900 tabular-nums">
           {card.a} × {card.b} = ?
         </h1>
 
-        <div className="text-5xl font-mono bg-white rounded-2xl px-8 py-4 shadow min-w-[6rem] text-center text-amber-900 tabular-nums min-h-[5rem]">
+        <div className="text-4xl font-mono bg-white rounded-2xl px-6 py-3 shadow min-w-[5rem] text-center text-amber-900 tabular-nums min-h-[4rem]">
           {input || ' '}
         </div>
 
         {state.phase === 'showing-correction' && (
-          <div className="text-2xl text-amber-700 font-semibold text-center">
+          <div className="text-xl text-amber-700 font-semibold text-center">
             <div>Správně je {card.a * card.b}.</div>
-            <div className="text-base text-amber-600 mt-1">Napiš to číslo.</div>
+            <div className="text-sm text-amber-600">Napiš to číslo.</div>
           </div>
         )}
-      </main>
+      </section>
 
-      <footer className="flex flex-col gap-3 items-center">
+      <section className="flex-1 flex flex-col items-center justify-end gap-2 px-4 pb-4">
         <Numpad
           onDigit={d => setInput(prev => (prev.length < 4 ? prev + String(d) : prev))}
           onClear={() => setInput(prev => prev.slice(0, -1))}
@@ -112,7 +114,7 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
             Já nevím
           </button>
         )}
-      </footer>
+      </section>
     </div>
   )
 }
