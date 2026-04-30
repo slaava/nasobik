@@ -15,6 +15,9 @@ dist-ssr
 .env.*
 !.env.example
 
+# Local scratch / generated assets workspace
+scratch/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
