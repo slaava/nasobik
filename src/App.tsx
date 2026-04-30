@@ -6,6 +6,7 @@ import type { SessionState } from './core/session'
 import { SessionScreen } from './ui/SessionScreen'
 import { SessionSummary } from './ui/SessionSummary'
 import { beeScene } from './scenes/bee'
+import beeIdleUrl from './scenes/bee/assets/bee-idle.svg'
 
 type Phase = 'loading' | 'home' | 'playing' | 'summary'
 
@@ -47,7 +48,7 @@ export default function App() {
   if (phase === 'home') {
     return (
       <div className="flex flex-col h-full items-center justify-center bg-amber-50 gap-6 p-8">
-        <div className="text-9xl">🐝</div>
+        <img src={beeIdleUrl} alt="" className="h-[40vh] w-auto select-none" draggable={false} />
         <h1 className="text-4xl font-bold text-amber-900">Ahoj, {profile.name}!</h1>
         <p className="text-xl text-amber-800">Pojďme nakrmit včelku.</p>
         <button

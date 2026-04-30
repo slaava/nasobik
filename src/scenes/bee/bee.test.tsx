@@ -8,10 +8,14 @@ describe('beeScene', () => {
     expect(beeScene.goalCount).toBe(20)
   })
 
-  it('Hero renders the bee emoji', () => {
+  it('Hero renders the bee illustration', () => {
     const { Hero } = beeScene
-    render(<Hero correctCount={0} wrongCount={0} goalCount={20} lastEvent="idle" />)
-    expect(screen.getByText('🐝')).toBeInTheDocument()
+    const { container } = render(
+      <Hero correctCount={0} wrongCount={0} goalCount={20} lastEvent="idle" />,
+    )
+    const img = container.querySelector('img')
+    expect(img).not.toBeNull()
+    expect(img!.getAttribute('src')).toMatch(/bee-idle/)
   })
 
   it('Container shows correctCount / goalCount', () => {
