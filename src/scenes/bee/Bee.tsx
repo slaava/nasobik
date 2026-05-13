@@ -22,7 +22,7 @@ export function Bee({ lastEvent, correctCount, wrongCount }: SceneCtx) {
           ? { duration: 2, repeat: Infinity, ease: 'easeInOut' }
           : { duration: 0.6 }
       }
-      className="h-[28vh] lg:h-[60vh] w-auto max-w-full select-none"
+      className="h-[22vh] lg:h-[60vh] w-auto max-w-full select-none"
     />
   )
 }

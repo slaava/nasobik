@@ -7,14 +7,18 @@ type Props = {
 const KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 export function Numpad({ onDigit, onClear, onSubmit }: Props) {
+  const digitClass =
+    'rounded-2xl bg-white shadow-md py-3 lg:py-6 text-2xl lg:text-3xl font-bold text-amber-900 active:scale-95 transition'
+  const utilClass =
+    'rounded-2xl shadow-md py-3 lg:py-6 text-lg lg:text-xl font-semibold text-amber-900 active:scale-95 transition'
   return (
-    <div className="grid grid-cols-3 gap-3 max-w-sm w-full mx-auto">
+    <div className="grid grid-cols-3 gap-2 lg:gap-3 max-w-sm w-full mx-auto">
       {KEYS.map((k) => (
         <button
           key={k}
           type="button"
           onClick={() => onDigit(k)}
-          className="rounded-2xl bg-white shadow-md py-6 text-3xl font-bold text-amber-900 active:scale-95 transition"
+          className={digitClass}
         >
           {k}
         </button>
@@ -22,7 +26,7 @@ export function Numpad({ onDigit, onClear, onSubmit }: Props) {
       <button
         type="button"
         onClick={onClear}
-        className="rounded-2xl bg-amber-100 shadow-md py-6 text-xl font-semibold text-amber-900 active:scale-95 transition"
+        className={`${utilClass} bg-amber-100`}
         aria-label="Smazat"
       >
         ⌫
@@ -30,14 +34,14 @@ export function Numpad({ onDigit, onClear, onSubmit }: Props) {
       <button
         type="button"
         onClick={() => onDigit(0)}
-        className="rounded-2xl bg-white shadow-md py-6 text-3xl font-bold text-amber-900 active:scale-95 transition"
+        className={digitClass}
       >
         0
       </button>
       <button
         type="button"
         onClick={onSubmit}
-        className="rounded-2xl bg-amber-500 shadow-md py-6 text-xl font-bold text-white active:scale-95 transition"
+        className={`${utilClass} bg-amber-500 text-white`}
         aria-label="Hotovo"
       >
         ✓

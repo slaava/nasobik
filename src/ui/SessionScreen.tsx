@@ -74,31 +74,31 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-full bg-amber-50">
-      <section className="flex flex-col items-center justify-center gap-3 shrink-0 px-4 pt-4 lg:order-2 lg:basis-1/2 lg:h-full lg:gap-6 lg:pt-0">
+    <div className="flex flex-col lg:flex-row h-full bg-amber-50 overflow-hidden">
+      <section className="flex flex-col items-center justify-center gap-2 shrink-0 px-4 pt-2 lg:order-2 lg:basis-1/2 lg:h-full lg:gap-6 lg:pt-0">
         <Hero {...sceneCtx} />
         <Container {...sceneCtx} />
       </section>
 
-      <div className="flex flex-col flex-1 lg:order-1 lg:basis-1/2 lg:justify-center lg:gap-6">
-        <section className="flex flex-col items-center justify-center gap-3 px-4 py-2">
-          <h1 className="text-5xl font-bold text-amber-900 tabular-nums">
+      <div className="flex flex-col flex-1 min-h-0 lg:order-1 lg:basis-1/2 lg:justify-center lg:gap-6">
+        <section className="flex flex-col items-center justify-center gap-2 px-4 py-2 lg:gap-3">
+          <h1 className="text-4xl lg:text-5xl font-bold text-amber-900 tabular-nums">
             {card.a} × {card.b} = ?
           </h1>
 
-          <div className="text-4xl font-mono bg-white rounded-2xl px-6 py-3 shadow min-w-[5rem] text-center text-amber-900 tabular-nums min-h-[4rem]">
+          <div className="text-3xl lg:text-4xl font-mono bg-white rounded-2xl px-5 py-2 lg:px-6 lg:py-3 shadow min-w-[5rem] text-center text-amber-900 tabular-nums min-h-[3.5rem] lg:min-h-[4rem]">
             {input || ' '}
           </div>
 
           {state.phase === 'showing-correction' && (
-            <div className="text-xl text-amber-700 font-semibold text-center">
+            <div className="text-lg lg:text-xl text-amber-700 font-semibold text-center">
               <div>Správně je {card.a * card.b}.</div>
               <div className="text-sm text-amber-600">Napiš to číslo.</div>
             </div>
           )}
         </section>
 
-        <section className="flex-1 flex flex-col items-center justify-end gap-2 px-4 pb-4 lg:flex-none">
+        <section className="flex-1 flex flex-col items-center justify-end gap-1 lg:gap-2 px-4 pb-3 lg:pb-4 lg:flex-none">
           <Numpad
             onDigit={d => setInput(prev => (prev.length < 4 ? prev + String(d) : prev))}
             onClear={() => setInput(prev => prev.slice(0, -1))}
