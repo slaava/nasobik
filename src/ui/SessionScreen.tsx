@@ -75,11 +75,9 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
 
   return (
     <div className="flex flex-col lg:flex-row h-full bg-amber-50">
-      <section className="relative flex items-center justify-center basis-[40vh] shrink-0 lg:order-2 lg:basis-1/2 lg:h-full">
+      <section className="flex flex-col items-center justify-center gap-3 shrink-0 px-4 pt-4 lg:order-2 lg:basis-1/2 lg:h-full lg:gap-6 lg:pt-0">
         <Hero {...sceneCtx} />
-        <div className="absolute top-3 left-3">
-          <Container {...sceneCtx} />
-        </div>
+        <Container {...sceneCtx} />
       </section>
 
       <div className="flex flex-col flex-1 lg:order-1 lg:basis-1/2 lg:justify-center lg:gap-6">
