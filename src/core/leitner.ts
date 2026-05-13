@@ -69,12 +69,13 @@ export function pickNext(cards: Card[], ctx: PickContext): Card | null {
   const ready = sessionEligible.filter(isReady)
   const pool = ready.length > 0 ? ready : sessionEligible
 
+  // Sort by priority (lower box first, then higher exposuresSinceLastSeen).
+  // Ties resolve in input array order — Array.prototype.sort is stable. The
+  // session reducer shuffles the cards on START so that ties produce varied
+  // picks instead of an alphabetical-by-id run.
   const sorted = [...pool].sort((a, b) => {
     if (a.box !== b.box) return a.box - b.box
-    if (a.exposuresSinceLastSeen !== b.exposuresSinceLastSeen) {
-      return b.exposuresSinceLastSeen - a.exposuresSinceLastSeen
-    }
-    return a.id.localeCompare(b.id)
+    return b.exposuresSinceLastSeen - a.exposuresSinceLastSeen
   })
 
   return sorted[0] ?? null

@@ -41,6 +41,21 @@ function replaceCard(cards: Card[], updated: Card): Card[] {
   return cards.map(c => (c.id === updated.id ? updated : c))
 }
 
+// Fisher–Yates shuffle. Used at session START so that tied cards (e.g. all
+// fresh Box 1 cards on the first question) get picked in a varied order
+// instead of sorting alphabetically by id, which used to put every "10x*"
+// card before the rest.
+function shuffle<T>(arr: readonly T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tmp = a[i]!
+    a[i] = a[j]!
+    a[j] = tmp
+  }
+  return a
+}
+
 function pickNextWithFinale(state: SessionState): Card | null {
   const remainingForGoal = state.goalCount - state.correctCount
   if (remainingForGoal === 1) {
@@ -56,14 +71,15 @@ function pickNextWithFinale(state: SessionState): Card | null {
 export function sessionReducer(state: SessionState, action: SessionAction): SessionState {
   switch (action.type) {
     case 'START': {
+      const shuffled = shuffle(action.cards)
       const next: SessionState = {
         ...initSessionState(),
         phase: 'asking',
-        cards: action.cards,
+        cards: shuffled,
         goalCount: action.goalCount,
         blockingTable: action.blockingTable,
       }
-      const first = pickNext(action.cards, { blockingTable: action.blockingTable })
+      const first = pickNext(shuffled, { blockingTable: action.blockingTable })
       return { ...next, currentCard: first }
     }
 
