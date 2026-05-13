@@ -74,47 +74,49 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-amber-50">
-      <section className="relative flex items-center justify-center basis-[40vh] shrink-0">
+    <div className="flex flex-col lg:flex-row h-full bg-amber-50">
+      <section className="relative flex items-center justify-center basis-[40vh] shrink-0 lg:order-2 lg:basis-1/2 lg:h-full">
         <Hero {...sceneCtx} />
         <div className="absolute top-3 left-3">
           <Container {...sceneCtx} />
         </div>
       </section>
 
-      <section className="flex flex-col items-center justify-center gap-3 px-4 py-2">
-        <h1 className="text-5xl font-bold text-amber-900 tabular-nums">
-          {card.a} × {card.b} = ?
-        </h1>
+      <div className="flex flex-col flex-1 lg:order-1 lg:basis-1/2 lg:justify-center lg:gap-6">
+        <section className="flex flex-col items-center justify-center gap-3 px-4 py-2">
+          <h1 className="text-5xl font-bold text-amber-900 tabular-nums">
+            {card.a} × {card.b} = ?
+          </h1>
 
-        <div className="text-4xl font-mono bg-white rounded-2xl px-6 py-3 shadow min-w-[5rem] text-center text-amber-900 tabular-nums min-h-[4rem]">
-          {input || ' '}
-        </div>
-
-        {state.phase === 'showing-correction' && (
-          <div className="text-xl text-amber-700 font-semibold text-center">
-            <div>Správně je {card.a * card.b}.</div>
-            <div className="text-sm text-amber-600">Napiš to číslo.</div>
+          <div className="text-4xl font-mono bg-white rounded-2xl px-6 py-3 shadow min-w-[5rem] text-center text-amber-900 tabular-nums min-h-[4rem]">
+            {input || ' '}
           </div>
-        )}
-      </section>
 
-      <section className="flex-1 flex flex-col items-center justify-end gap-2 px-4 pb-4">
-        <Numpad
-          onDigit={d => setInput(prev => (prev.length < 4 ? prev + String(d) : prev))}
-          onClear={() => setInput(prev => prev.slice(0, -1))}
-          onSubmit={submit}
-        />
-        {state.phase === 'asking' && (
-          <button
-            type="button"
-            onClick={() => dispatch({ type: 'SUBMIT_ANSWER', value: -1, rt: 0 })}
-            className="text-amber-700 underline text-sm"
-          >
-            Já nevím
-          </button>
-        )}
-      </section>
+          {state.phase === 'showing-correction' && (
+            <div className="text-xl text-amber-700 font-semibold text-center">
+              <div>Správně je {card.a * card.b}.</div>
+              <div className="text-sm text-amber-600">Napiš to číslo.</div>
+            </div>
+          )}
+        </section>
+
+        <section className="flex-1 flex flex-col items-center justify-end gap-2 px-4 pb-4 lg:flex-none">
+          <Numpad
+            onDigit={d => setInput(prev => (prev.length < 4 ? prev + String(d) : prev))}
+            onClear={() => setInput(prev => prev.slice(0, -1))}
+            onSubmit={submit}
+          />
+          {state.phase === 'asking' && (
+            <button
+              type="button"
+              onClick={() => dispatch({ type: 'SUBMIT_ANSWER', value: -1, rt: 0 })}
+              className="text-amber-700 underline text-sm"
+            >
+              Já nevím
+            </button>
+          )}
+        </section>
+      </div>
     </div>
   )
 }
