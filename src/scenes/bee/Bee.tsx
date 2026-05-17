@@ -46,7 +46,7 @@ export function Bee({ lastEvent, correctCount, wrongCount }: SceneCtx) {
       alt=""
       draggable={false}
       animate={controls}
-      className="h-[22vh] lg:h-[60vh] w-auto max-w-full select-none"
+      className="max-h-[22dvh] lg:max-h-[60vh] lg:h-[60vh] w-auto max-w-full select-none"
     />
   )
 }
