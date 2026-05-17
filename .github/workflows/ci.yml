@@ -26,7 +26,10 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm ci
+      # npm install (not ci) — the lockfile is generated on macOS and is
+      # missing Linux-specific optional deps like @emnapi/*. Letting npm
+      # resolve those at install time on Linux avoids the EUSAGE error.
+      - run: npm install --no-audit --no-fund
 
       - name: Run tests
         run: npm test
