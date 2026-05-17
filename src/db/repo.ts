@@ -42,6 +42,13 @@ export async function putSession(db: IDBPDatabase<NasobikDB>, session: Session):
   await db.put('sessions', session)
 }
 
+export async function getSessionsForProfile(
+  db: IDBPDatabase<NasobikDB>,
+  profileId: string,
+): Promise<Session[]> {
+  return db.getAllFromIndex('sessions', 'by-profile', profileId)
+}
+
 // Reconciles the cards collection with a new unlockedTables list. Cards for
 // tables that are no longer unlocked get removed; new cards are inserted for
 // newly unlocked tables (initialised in Box 1). Cards on still-unlocked tables

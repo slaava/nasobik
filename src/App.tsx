@@ -6,9 +6,10 @@ import {
   putCards,
   putSession,
   getCardsForProfile,
+  getSessionsForProfile,
   syncCardsToUnlockedTables,
 } from './db/repo'
-import type { Card, Profile } from './core/types'
+import type { Card, Profile, Session } from './core/types'
 import type { SessionState } from './core/session'
 import { SessionScreen } from './ui/SessionScreen'
 import { SessionSummary } from './ui/SessionSummary'
@@ -23,14 +24,20 @@ export default function App() {
   const [phase, setPhase] = useState<Phase>('loading')
   const [profile, setProfile] = useState<Profile | null>(null)
   const [cards, setCards] = useState<Card[]>([])
+  const [sessions, setSessions] = useState<Session[]>([])
   const [lastSummary, setLastSummary] = useState<{ correct: number; wrong: number } | null>(null)
 
   useEffect(() => {
-    void bootstrapDefaultProfile().then(({ profile, cards }) => {
+    void (async () => {
+      const { profile, cards } = await bootstrapDefaultProfile()
+      const db = await openDb()
+      const sess = await getSessionsForProfile(db, profile.id)
+      db.close()
       setProfile(profile)
       setCards(cards)
+      setSessions(sess)
       setPhase('home')
-    })
+    })()
   }, [])
 
   const onFinish = async (state: SessionState) => {
@@ -38,16 +45,20 @@ export default function App() {
     const wrongCount = state.answers.filter(a => !a.correct).length
     setLastSummary({ correct: state.correctCount, wrong: wrongCount })
     setCards(state.cards)
-    const db = await openDb()
-    await putCards(db, state.cards)
-    await putSession(db, {
+    const totalMs = state.answers.reduce((sum, a) => sum + a.rt, 0)
+    const endedAt = Date.now()
+    const newSession: Session = {
       id: crypto.randomUUID(),
       profileId: profile.id,
-      startedAt: Date.now() - 1,
-      endedAt: Date.now(),
+      startedAt: endedAt - totalMs,
+      endedAt,
       answers: state.answers,
-    })
+    }
+    const db = await openDb()
+    await putCards(db, state.cards)
+    await putSession(db, newSession)
     db.close()
+    setSessions(prev => [...prev, newSession])
     setPhase('summary')
   }
 
@@ -64,6 +75,15 @@ export default function App() {
     db.close()
     setProfile(updatedProfile)
     setCards(freshCards)
+  }
+
+  const onRename = async (newName: string) => {
+    if (!profile) return
+    const updated = { ...profile, name: newName }
+    const db = await openDb()
+    await putProfile(db, updated)
+    db.close()
+    setProfile(updated)
   }
 
   if (phase === 'loading' || !profile) {
@@ -107,7 +127,11 @@ export default function App() {
   if (phase === 'parent-settings') {
     return (
       <ParentSettings
+        name={profile.name}
         unlockedTables={profile.unlockedTables}
+        cards={cards}
+        sessions={sessions}
+        onRename={onRename}
         onToggleTable={onToggleTable}
         onBack={() => setPhase('home')}
       />
