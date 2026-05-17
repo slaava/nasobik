@@ -8,7 +8,7 @@ beforeEach(() => {
 describe('bootstrapDefaultProfile', () => {
   it('creates the profile and cards on first run', async () => {
     const result = await bootstrapDefaultProfile()
-    expect(result.profile.name).toBe('Anička')
+    expect(result.profile.name).toBe('Emička')
     expect(result.profile.unlockedTables).toEqual([1, 2, 5, 10])
     expect(result.cards).toHaveLength(40)
   })
@@ -16,7 +16,7 @@ describe('bootstrapDefaultProfile', () => {
   it('is idempotent across runs', async () => {
     await bootstrapDefaultProfile()
     const second = await bootstrapDefaultProfile()
-    expect(second.profile.name).toBe('Anička')
+    expect(second.profile.name).toBe('Emička')
     expect(second.cards).toHaveLength(40)
   })
 })

@@ -10,7 +10,7 @@ export async function bootstrapDefaultProfile(): Promise<{ profile: Profile; car
   if (!profile) {
     profile = {
       id: DEFAULT_ID,
-      name: 'Anička',
+      name: 'Emička',
       avatar: '🐝',
       createdAt: Date.now(),
       unlockedTables: [1, 2, 5, 10],
