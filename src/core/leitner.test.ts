@@ -118,11 +118,14 @@ describe('pickNext', () => {
     expect(pickNext(cards, { blockingTable: null })?.id).toBe('a')
   })
 
-  it('skips Box 4 cards that have not waited enough sessions', () => {
+  it('falls back to a not-yet-due card if it is the only option', () => {
+    // Single Box 4 card whose session interval has not elapsed. With nothing
+    // else to choose from, pickNext must still return it — otherwise the
+    // session screen sits on "Načítám…" forever.
     const cards = [
       baseCard({ id: 'a', box: 4, sessionsSinceLastSeen: 1, exposuresSinceLastSeen: 0 }),
     ]
-    expect(pickNext(cards, { blockingTable: null })).toBeNull()
+    expect(pickNext(cards, { blockingTable: null })?.id).toBe('a')
   })
 
   it('falls back to the lowest-box card if nothing is "ready" (e.g., start of session)', () => {

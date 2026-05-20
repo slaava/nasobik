@@ -71,7 +71,17 @@ function pickNextWithFinale(state: SessionState): Card | null {
 export function sessionReducer(state: SessionState, action: SessionAction): SessionState {
   switch (action.type) {
     case 'START': {
-      const shuffled = shuffle(action.cards)
+      // Advance the cross-session interval on every card. Cards that get
+      // touched during THIS session will have sessionsSinceLastSeen reset to
+      // 0 by applyAnswer. Cards that don't get touched keep the bumped value
+      // — that is how Box 3+ items eventually become session-due again.
+      // Without this bump, sessionsSinceLastSeen stays at 0 forever and
+      // higher-box cards never re-surface.
+      const advanced = action.cards.map(c => ({
+        ...c,
+        sessionsSinceLastSeen: c.sessionsSinceLastSeen + 1,
+      }))
+      const shuffled = shuffle(advanced)
       const next: SessionState = {
         ...initSessionState(),
         phase: 'asking',

@@ -63,11 +63,20 @@ export function pickNext(cards: Card[], ctx: PickContext): Card | null {
     ? cards.filter(c => c.a === ctx.blockingTable)
     : cards
 
-  const sessionEligible = eligible.filter(meetsSessionThreshold)
-  if (sessionEligible.length === 0) return null
+  if (eligible.length === 0) return null
 
+  // Three-tier fallback so the session is never stuck: prefer ready cards
+  // (both thresholds met), then session-eligible (exposure interval still
+  // pending), then any eligible card. The last fallback covers users whose
+  // progress has all cards in Box 3+ with sessionsSinceLastSeen below their
+  // session threshold — without it, pickNext would return null and the
+  // SessionScreen would sit on "Načítám…" forever.
+  const sessionEligible = eligible.filter(meetsSessionThreshold)
   const ready = sessionEligible.filter(isReady)
-  const pool = ready.length > 0 ? ready : sessionEligible
+  const pool =
+    ready.length > 0 ? ready :
+    sessionEligible.length > 0 ? sessionEligible :
+    eligible
 
   // Sort by priority (lower box first, then higher exposuresSinceLastSeen).
   // Ties resolve in input array order — Array.prototype.sort is stable. The

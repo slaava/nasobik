@@ -69,8 +69,18 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
   const Hero = scene.Hero
   const Container = scene.Container
 
-  if (state.phase === 'idle' || !card) {
+  if (state.phase === 'idle') {
     return <div className="p-8 text-center text-amber-900">Načítám…</div>
+  }
+  if (!card) {
+    return (
+      <div className="flex flex-col h-dvh items-center justify-center gap-4 bg-amber-50 p-8 text-center">
+        <p className="text-xl text-amber-900">Není co procvičovat.</p>
+        <p className="text-base text-amber-700 max-w-sm">
+          V sekci <strong>Pro rodiče</strong> zaškrtni alespoň jednu řadu násobilky.
+        </p>
+      </div>
+    )
   }
 
   return (
