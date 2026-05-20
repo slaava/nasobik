@@ -28,9 +28,17 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
     }
   }, [state.currentCard?.id, state.phase])
 
+  // Fire onFinish exactly once when the session enters the finished phase.
+  // Re-running on every state/onFinish identity change caused the session
+  // to be persisted twice (and stats to count every answer twice).
+  const finishedFiredRef = useRef(false)
   useEffect(() => {
-    if (state.phase === 'finished') onFinish(state)
-  }, [state.phase, state, onFinish])
+    if (state.phase === 'finished' && !finishedFiredRef.current) {
+      finishedFiredRef.current = true
+      onFinish(state)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase])
 
   const submit = () => {
     if (input === '') return
