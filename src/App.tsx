@@ -20,6 +20,18 @@ import beeIdleUrl from './scenes/bee/assets/bee-idle.svg'
 
 type Phase = 'loading' | 'home' | 'playing' | 'summary' | 'parent-gate' | 'parent-settings'
 
+// crypto.randomUUID requires a secure context (HTTPS or localhost). The app is
+// served over plain HTTP on the LAN/Tailscale during dev, where it would throw
+// "crypto.randomUUID is not a function" and silently break the post-session
+// flow (no summary, stuck on the finished SessionScreen). Sessions are local
+// only, so any unique-enough id is fine.
+function makeSessionId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
 export default function App() {
   const [phase, setPhase] = useState<Phase>('loading')
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -48,7 +60,7 @@ export default function App() {
     const totalMs = state.answers.reduce((sum, a) => sum + a.rt, 0)
     const endedAt = Date.now()
     const newSession: Session = {
-      id: crypto.randomUUID(),
+      id: makeSessionId(),
       profileId: profile.id,
       startedAt: endedAt - totalMs,
       endedAt,
@@ -70,7 +82,24 @@ export default function App() {
     const updatedProfile = { ...profile, unlockedTables: next }
     const db = await openDb()
     await putProfile(db, updatedProfile)
-    await syncCardsToUnlockedTables(db, profile.id, next)
+    await syncCardsToUnlockedTables(db, profile.id, next, updatedProfile.divisionEnabled)
+    const freshCards = await getCardsForProfile(db, profile.id)
+    db.close()
+    setProfile(updatedProfile)
+    setCards(freshCards)
+  }
+
+  const onToggleDivision = async () => {
+    if (!profile) return
+    const updatedProfile = { ...profile, divisionEnabled: !profile.divisionEnabled }
+    const db = await openDb()
+    await putProfile(db, updatedProfile)
+    await syncCardsToUnlockedTables(
+      db,
+      profile.id,
+      updatedProfile.unlockedTables,
+      updatedProfile.divisionEnabled,
+    )
     const freshCards = await getCardsForProfile(db, profile.id)
     db.close()
     setProfile(updatedProfile)
@@ -129,10 +158,12 @@ export default function App() {
       <ParentSettings
         name={profile.name}
         unlockedTables={profile.unlockedTables}
+        divisionEnabled={profile.divisionEnabled}
         cards={cards}
         sessions={sessions}
         onRename={onRename}
         onToggleTable={onToggleTable}
+        onToggleDivision={onToggleDivision}
         onBack={() => setPhase('home')}
       />
     )

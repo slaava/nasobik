@@ -14,11 +14,19 @@ type Props = {
 }
 
 // 10×10 grid coloured by the Leitner box of each fact. Row = first factor
-// (1-10), column = second factor (1-10). Cells without a corresponding card
-// (i.e. the row's table is currently locked) stay grey.
+// (1-10), column = second factor (1-10). When division cards exist for the
+// same (a, b) we colour the cell by the worst of the two boxes — the child
+// hasn't really "got" a fact until both directions are fluent. The tooltip
+// breaks down the per-op state. Locked rows stay grey.
 export function Heatmap({ cards }: Props) {
-  const byKey = new Map<string, Card>()
-  for (const c of cards) byKey.set(`${c.a}-${c.b}`, c)
+  type CellState = { mul?: Card; div?: Card }
+  const byKey = new Map<string, CellState>()
+  for (const c of cards) {
+    const key = `${c.a}-${c.b}`
+    const entry = byKey.get(key) ?? {}
+    entry[c.op] = c
+    byKey.set(key, entry)
+  }
 
   return (
     <div className="inline-block bg-white rounded-2xl p-3 shadow">
@@ -33,11 +41,10 @@ export function Heatmap({ cards }: Props) {
           <div key={`row-${a}`} className="contents">
             <div className="text-center text-amber-800 font-semibold py-1 tabular-nums">{a}</div>
             {Array.from({ length: 10 }, (_, j) => j + 1).map(b => {
-              const card = byKey.get(`${a}-${b}`)
-              const box = card?.box ?? 0
-              const title = card
-                ? `${a} × ${b} = ${a * b} · viděno ${card.totalSeen}× · správně ${card.totalCorrect}×`
-                : `${a} × ${b} (řada zamčená)`
+              const cell = byKey.get(`${a}-${b}`) ?? {}
+              const boxes = [cell.mul?.box, cell.div?.box].filter((x): x is Card['box'] => x !== undefined)
+              const box = boxes.length === 0 ? 0 : Math.min(...boxes)
+              const title = describeCell(a, b, cell)
               return (
                 <div
                   key={`cell-${a}-${b}`}
@@ -53,4 +60,16 @@ export function Heatmap({ cards }: Props) {
       </div>
     </div>
   )
+}
+
+function describeCell(a: number, b: number, cell: { mul?: Card; div?: Card }): string {
+  if (!cell.mul && !cell.div) return `${a} × ${b} (řada zamčená)`
+  const lines: string[] = []
+  if (cell.mul) {
+    lines.push(`${a} × ${b} = ${a * b} · viděno ${cell.mul.totalSeen}× · správně ${cell.mul.totalCorrect}×`)
+  }
+  if (cell.div) {
+    lines.push(`${a * b} ÷ ${a} = ${b} · viděno ${cell.div.totalSeen}× · správně ${cell.div.totalCorrect}×`)
+  }
+  return lines.join('\n')
 }

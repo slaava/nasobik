@@ -1,6 +1,7 @@
 import { openDB, type IDBPDatabase } from 'idb'
 import { DB_NAME, DB_VERSION, type NasobikDB } from './schema'
-import type { Profile, Card, Session } from '../core/types'
+import type { Profile, Card, CardOp, Session } from '../core/types'
+import { cardId } from '../core/cards'
 
 export async function openDb(): Promise<IDBPDatabase<NasobikDB>> {
   return openDB<NasobikDB>(DB_NAME, DB_VERSION, {
@@ -49,37 +50,45 @@ export async function getSessionsForProfile(
   return db.getAllFromIndex('sessions', 'by-profile', profileId)
 }
 
-// Reconciles the cards collection with a new unlockedTables list. Cards for
-// tables that are no longer unlocked get removed; new cards are inserted for
-// newly unlocked tables (initialised in Box 1). Cards on still-unlocked tables
-// are left untouched so the child does not lose progress when toggling.
+// Reconciles the cards collection with a new (unlockedTables, divisionEnabled)
+// state. Removes cards whose table is no longer unlocked and removes div cards
+// when division is disabled. Inserts fresh Box-1 cards for newly required
+// (table, op) combinations. Cards that should still exist are left untouched
+// so the child does not lose Leitner progress when toggling.
 export async function syncCardsToUnlockedTables(
   db: IDBPDatabase<NasobikDB>,
   profileId: string,
   unlockedTables: number[],
+  divisionEnabled: boolean,
 ): Promise<void> {
   const existing = await getCardsForProfile(db, profileId)
   const unlocked = new Set(unlockedTables)
-  const toDelete = existing.filter(c => !unlocked.has(c.a))
-  const keptIds = new Set(existing.filter(c => unlocked.has(c.a)).map(c => c.id))
+  const requiredOps: CardOp[] = divisionEnabled ? ['mul', 'div'] : ['mul']
+
+  const isRequired = (c: Card) => unlocked.has(c.a) && requiredOps.includes(c.op)
+  const toDelete = existing.filter(c => !isRequired(c))
+  const keptIds = new Set(existing.filter(isRequired).map(c => c.id))
 
   const newCards: Card[] = []
   for (const a of unlockedTables) {
     for (let b = 1; b <= 10; b++) {
-      const id = `${profileId}:${a}x${b}`
-      if (!keptIds.has(id)) {
-        newCards.push({
-          id,
-          profileId,
-          a,
-          b,
-          box: 1,
-          exposuresSinceLastSeen: 0,
-          sessionsSinceLastSeen: 0,
-          lastRT: null,
-          totalSeen: 0,
-          totalCorrect: 0,
-        })
+      for (const op of requiredOps) {
+        const id = cardId(profileId, op, a, b)
+        if (!keptIds.has(id)) {
+          newCards.push({
+            id,
+            profileId,
+            op,
+            a,
+            b,
+            box: 1,
+            exposuresSinceLastSeen: 0,
+            sessionsSinceLastSeen: 0,
+            lastRT: null,
+            totalSeen: 0,
+            totalCorrect: 0,
+          })
+        }
       }
     }
   }

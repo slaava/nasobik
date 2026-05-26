@@ -6,10 +6,12 @@ import { ParentSettings } from './ParentSettings'
 const baseProps = {
   name: 'Anička',
   unlockedTables: [1, 2, 5],
+  divisionEnabled: false,
   cards: [],
   sessions: [],
   onRename: () => {},
   onToggleTable: () => {},
+  onToggleDivision: () => {},
   onBack: () => {},
 }
 

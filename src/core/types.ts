@@ -5,11 +5,20 @@ export type Profile = {
   createdAt: number
   unlockedTables: number[]
   selectedScene: string
+  divisionEnabled: boolean
 }
+
+// op decides how the card is rendered and how the expected answer is computed:
+//   mul → "a × b = ?", expected = a*b
+//   div → "(a*b) ÷ a = ?", expected = b
+// We always store a as the table number (divisor) and b as the multiplier, so
+// the two ops form a clean pair per (a, b) fact with independent Leitner state.
+export type CardOp = 'mul' | 'div'
 
 export type Card = {
   id: string
   profileId: string
+  op: CardOp
   a: number
   b: number
   box: 1 | 2 | 3 | 4 | 5

@@ -2,6 +2,7 @@ import { useEffect, useReducer, useRef, useState } from 'react'
 import { sessionReducer, initSessionState } from '../core/session'
 import type { SessionState } from '../core/session'
 import type { Card } from '../core/types'
+import { expectedAnswer, formatQuestion } from '../core/cards'
 import type { Scene } from '../scenes/types'
 import { Numpad } from './Numpad'
 
@@ -17,9 +18,16 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
   const [input, setInput] = useState('')
   const askedAtRef = useRef<number>(Date.now())
 
+  // START fires exactly once per mount. App passes fresh cards on each remount
+  // (after the summary screen is dismissed), so we don't need a dep array that
+  // tracks props. Listening to `cards` here caused the session to restart
+  // mid-onFinish: App calls setCards(state.cards) before setPhase('summary'),
+  // which changed the cards reference and re-dispatched START before the
+  // phase flip unmounted us — running a second session in place.
   useEffect(() => {
     dispatch({ type: 'START', cards, goalCount, blockingTable: null })
-  }, [cards, goalCount])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (state.phase === 'asking') {
@@ -80,6 +88,12 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
   if (state.phase === 'idle') {
     return <div className="p-8 text-center text-amber-900">Načítám…</div>
   }
+  // Distinguish "no cards available at start" (genuine empty deck — show help
+  // text) from "session has finished" (transient — App.onFinish is about to
+  // swap us out for the summary screen; render nothing to avoid a flash).
+  if (state.phase === 'finished') {
+    return <div className="h-dvh bg-amber-50" />
+  }
   if (!card) {
     return (
       <div className="flex flex-col h-dvh items-center justify-center gap-4 bg-amber-50 p-8 text-center">
@@ -100,7 +114,7 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
 
       <section className="flex-1 min-h-0 overflow-hidden flex flex-col items-center justify-end gap-2 px-4 pb-3 lg:order-1 lg:basis-1/2 lg:justify-center lg:pb-0 lg:gap-4 [@media(min-height:760px)]:gap-3 [@media(min-height:760px)]:pb-4">
         <h1 className="text-3xl [@media(min-height:760px)]:text-4xl lg:text-5xl font-bold text-amber-900 tabular-nums">
-          {card.a} × {card.b} = ?
+          {formatQuestion(card)} = ?
         </h1>
 
         <div className="text-2xl [@media(min-height:760px)]:text-3xl lg:text-4xl font-mono bg-white rounded-2xl px-4 py-1.5 [@media(min-height:760px)]:px-5 [@media(min-height:760px)]:py-2 lg:px-6 lg:py-3 shadow min-w-[5rem] text-center text-amber-900 tabular-nums min-h-[2.75rem] [@media(min-height:760px)]:min-h-[3.5rem] lg:min-h-[4rem]">
@@ -109,7 +123,7 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
 
         {state.phase === 'showing-correction' && (
           <div className="text-base [@media(min-height:760px)]:text-lg lg:text-xl text-amber-700 font-semibold text-center">
-            <div>Správně je {card.a * card.b}.</div>
+            <div>Správně je {expectedAnswer(card)}.</div>
             <div className="text-xs [@media(min-height:760px)]:text-sm text-amber-600">Napiš to číslo.</div>
           </div>
         )}

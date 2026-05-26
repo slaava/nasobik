@@ -7,7 +7,7 @@ import { beeScene } from '../scenes/bee'
 
 describe('SessionScreen', () => {
   it('shows the first question on mount', () => {
-    const cards = generateCardsForTables('p1', [2])
+    const cards = generateCardsForTables('p1', [2], false)
     render(
       <SessionScreen
         cards={cards}
@@ -20,7 +20,7 @@ describe('SessionScreen', () => {
   })
 
   it('typing the correct answer via numpad advances the hive', async () => {
-    const cards = generateCardsForTables('p1', [2])
+    const cards = generateCardsForTables('p1', [2], false)
     render(
       <SessionScreen
         cards={cards}
@@ -43,7 +43,7 @@ describe('SessionScreen', () => {
 
   it('calls onFinish when goal reached', async () => {
     const onFinish = vi.fn()
-    const cards = generateCardsForTables('p1', [2])
+    const cards = generateCardsForTables('p1', [2], false)
     render(
       <SessionScreen
         cards={cards}

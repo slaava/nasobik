@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { sessionReducer, initSessionState } from './session'
 import { generateCardsForTables } from './cards'
 
-const cards = (_n = 100) => generateCardsForTables('p1', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+const cards = (_n = 100) => generateCardsForTables('p1', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], false)
 
 describe('sessionReducer', () => {
   it('starts in idle', () => {

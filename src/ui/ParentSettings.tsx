@@ -6,20 +6,24 @@ import { Heatmap } from './Heatmap'
 type Props = {
   name: string
   unlockedTables: number[]
+  divisionEnabled: boolean
   cards: Card[]
   sessions: Session[]
   onRename: (newName: string) => void
   onToggleTable: (n: number) => void
+  onToggleDivision: () => void
   onBack: () => void
 }
 
 export function ParentSettings({
   name,
   unlockedTables,
+  divisionEnabled,
   cards,
   sessions,
   onRename,
   onToggleTable,
+  onToggleDivision,
   onBack,
 }: Props) {
   const [nameDraft, setNameDraft] = useState(name)
@@ -89,6 +93,23 @@ export function ParentSettings({
         </div>
         <p className="text-xs text-amber-600 mt-2 max-w-md">
           Pokrok zůstává — vypnutou řadu po zapnutí navážeš tam, kde dítě skončilo.
+        </p>
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold text-amber-900 mb-1">Operace</h2>
+        <label className="inline-flex items-center gap-3 rounded-2xl bg-white shadow px-4 py-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={divisionEnabled}
+            onChange={onToggleDivision}
+            className="w-5 h-5"
+          />
+          <span className="text-lg text-amber-900">Procvičovat i dělení</span>
+        </label>
+        <p className="text-xs text-amber-600 mt-2 max-w-md">
+          Ke každému příkladu typu <span className="tabular-nums">6 × 7</span> přidá i opačný{' '}
+          <span className="tabular-nums">42 ÷ 6</span>. Pokrok pro každý směr je samostatný.
         </p>
       </section>
 

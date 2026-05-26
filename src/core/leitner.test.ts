@@ -5,6 +5,7 @@ import type { Card } from './types'
 const baseCard = (overrides: Partial<Card> = {}): Card => ({
   id: 'p1:3x7',
   profileId: 'p1',
+  op: 'mul',
   a: 3,
   b: 7,
   box: 1,

@@ -1,5 +1,6 @@
 import type { Card, AnswerEvent } from './types'
 import { applyAnswer, bumpExposure, pickNext } from './leitner'
+import { expectedAnswer } from './cards'
 
 export type SessionPhase = 'idle' | 'asking' | 'showing-correction' | 'finished'
 
@@ -96,7 +97,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
     case 'SUBMIT_ANSWER': {
       if (state.phase !== 'asking' || !state.currentCard) return state
       const card = state.currentCard
-      const expected = card.a * card.b
+      const expected = expectedAnswer(card)
       const correct = action.value === expected
       const event: AnswerEvent = { a: card.a, b: card.b, correct, rt: action.rt }
 
@@ -136,7 +137,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
     case 'CONFIRM_CORRECTION': {
       if (state.phase !== 'showing-correction' || !state.currentCard) return state
       const card = state.currentCard
-      const expected = card.a * card.b
+      const expected = expectedAnswer(card)
       if (action.value !== expected) return state
 
       const updated = applyAnswer(card, { correct: false, rt: 0 })
