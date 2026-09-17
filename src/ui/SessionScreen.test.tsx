@@ -1,3 +1,5 @@
+import { cardsForClockLevel, formatTime } from '../core/clock'
+import { freshCard } from '../core/cards'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -119,16 +121,18 @@ describe('App game selection and session persistence', () => {
     })
   })
 
-  it('offers both games by default', async () => {
+  it('offers three games by default', async () => {
     render(<App />)
     expect(await screen.findByRole('button', { name: /× ÷\s*Násobení/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /\+ −\s*Sčítání a odčítání/ })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Hodiny/ }))
+    expect(screen.getByTestId('clock-face')).toBeInTheDocument()
   })
 
-  it('offers only HRÁT in tables mode when arithmetic is disabled', async () => {
+  it('offers only HRÁT in tables mode when arithmetic and clocks are disabled', async () => {
     const { profile } = await bootstrapDefaultProfile()
     const db = await openDb()
-    await putProfile(db, { ...profile, arithEnabled: false })
+    await putProfile(db, { ...profile, arithEnabled: false, clockEnabled: false })
     db.close()
     render(<App />)
     await userEvent.click(await screen.findByRole('button', { name: 'HRÁT' }))
@@ -171,4 +175,79 @@ describe('App game selection and session persistence', () => {
     await userEvent.click(screen.getByRole('button', { name: /Hrát znovu/i }))
     expect(screen.getByRole('heading')).toHaveTextContent(/[+−]/)
   })
+})
+
+describe('SessionScreen clocks', () => {
+  const props = { mode: 'clock' as const, goalCount: 3, scene: beeScene, onFinish: () => {} }
+
+  it('renders hours choices and advances the hive on a correct tap', async () => {
+    render(<SessionScreen {...props} cards={cardsForClockLevel('p1', 'hours')} />)
+    const hour = Number(screen.getByTestId('clock-face').getAttribute('data-hour'))
+    expect(screen.getAllByRole('button', { name: /^\d+:\d\d$/ })).toHaveLength(3)
+    expect(screen.queryByRole('button', { name: /hotovo/i })).not.toBeInTheDocument()
+    await userEvent.keyboard('123{Enter}')
+    expect(screen.getByTestId('clock-face')).toHaveAttribute('data-hour', String(hour))
+    await userEvent.click(screen.getByRole('button', { name: formatTime(hour * 100) }))
+    expect(screen.getByText('1 / 3')).toBeInTheDocument()
+  })
+
+  it('keeps identical choices during correction and requires the correct tap', async () => {
+    render(<SessionScreen {...props} cards={cardsForClockLevel('p1', 'hours')} />)
+    const hour = Number(screen.getByTestId('clock-face').getAttribute('data-hour'))
+    const options = screen.getAllByRole('button', { name: /^\d+:\d\d$/ })
+    const labels = options.map(b => b.textContent)
+    const wrong = options.find(b => b.textContent !== formatTime(hour * 100))!
+    await userEvent.click(wrong)
+    expect(screen.getByText('Klepni na správnou odpověď.')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^\d+:\d\d$/ }).map(b => b.textContent)).toEqual(labels)
+    await userEvent.click(wrong)
+    expect(screen.getByText('Klepni na správnou odpověď.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: formatTime(hour * 100) }))
+    expect(screen.queryByText('Klepni na správnou odpověď.')).not.toBeInTheDocument()
+    expect(screen.getByTestId('clock-face')).not.toHaveAttribute('data-hour', String(hour))
+  })
+
+  it('formats keypad input and accepts a 24h reading for a five-minute card', async () => {
+    render(<SessionScreen {...props} cards={[freshCard('p1', 'clk-read', 7, 35)]} />)
+    await userEvent.keyboard('730')
+    expect(screen.getByTestId('answer-input')).toHaveTextContent('7:30')
+    await userEvent.keyboard('{Backspace}{Backspace}{Backspace}1935{Enter}')
+    expect(screen.getByText('1 / 3')).toBeInTheDocument()
+  })
+
+  it('accepts 1930 for a mastered analog 7:30 but rejects it for 24-to-12 conversion', async () => {
+    const { unmount } = render(<SessionScreen {...props} cards={[{ ...freshCard('p1', 'clk-read', 7, 30), box: 3 }]} />)
+    await userEvent.keyboard('1930{Enter}')
+    expect(screen.getByText('1 / 3')).toBeInTheDocument()
+    unmount()
+    render(<SessionScreen {...props} cards={[freshCard('p1', 'clk-24to12', 19, 30)]} />)
+    expect(screen.getByTestId('digital-display')).toHaveTextContent('19:30')
+    await userEvent.keyboard('1930{Enter}')
+    expect(screen.getByText('Správně je 7:30.')).toBeInTheDocument()
+    expect(screen.getByText('Napiš ten čas.')).toBeInTheDocument()
+    await userEvent.keyboard('730{Enter}')
+    expect(screen.queryByText('Napiš ten čas.')).not.toBeInTheDocument()
+  })
+
+  it('asks phrases using only the three answer clocks', () => {
+    render(<SessionScreen {...props} cards={[freshCard('p1', 'clk-phrase', 7, 30)]} />)
+    expect(screen.getByRole('heading')).toHaveTextContent('půl osmé')
+    expect(screen.getAllByRole('img', { name: /^hodiny / })).toHaveLength(3)
+    for (const face of screen.getAllByTestId('clock-face')) expect(face.closest('button')).not.toBeNull()
+    expect(screen.getByRole('button', { name: '7:30' })).toBeInTheDocument()
+  })
+
+  it('explains an empty clock deck', () => {
+    render(<SessionScreen {...props} cards={[]} />)
+    expect(screen.getByText(/úroveň hodin/)).toBeInTheDocument()
+  })
+})
+
+it('returns a missed mastered clock to choices even in a one-card deck', async () => {
+  render(<SessionScreen mode="clock" goalCount={3} scene={beeScene} onFinish={() => {}} cards={[{ ...freshCard('p1', 'clk-read', 7, 30), box: 3 }]} />)
+  await userEvent.keyboard('830{Enter}')
+  await userEvent.keyboard('730{Enter}')
+  expect(screen.getAllByRole('button', { name: /^\d+:\d\d$/ })).toHaveLength(3)
+  await userEvent.click(screen.getByRole('button', { name: '7:30' }))
+  expect(screen.getByText('1 / 3')).toBeInTheDocument()
 })

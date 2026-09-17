@@ -1,3 +1,5 @@
+import type { Profile } from '../core/types'
+import { cardsForClockLevel } from '../core/clock'
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
   openDb,
@@ -7,7 +9,7 @@ import {
   deleteCards,
   getCardsForProfile,
   putSession,
-  syncCardsToUnlockedTables,
+  syncCardsForProfile,
 } from './repo'
 import { generateCardsForTables, generateArithCard } from '../core/cards'
 
@@ -27,6 +29,8 @@ describe('repo', () => {
       selectedScene: 'bee',
       divisionEnabled: false,
       arithEnabled: true,
+      clockEnabled: true,
+      clockLevels: [],
     })
     const got = await getProfile(db, 'p1')
     expect(got?.name).toBe('Anička')
@@ -55,23 +59,23 @@ describe('repo', () => {
   })
 })
 
-describe('syncCardsToUnlockedTables', () => {
+describe('syncCardsForProfile', () => {
   it('adds cards for newly unlocked tables', async () => {
     const db = await openDb()
     await putCards(db, generateCardsForTables('p1', [2], false))
-    await syncCardsToUnlockedTables(db, 'p1', [2, 3], false)
+    await syncCardsForProfile(db, profile([2, 3], false))
     const cards = await getCardsForProfile(db, 'p1')
     expect(cards).toHaveLength(20)
     db.close()
   })
 
-  it('removes cards for newly locked tables', async () => {
+  it('keeps cards for newly locked tables', async () => {
     const db = await openDb()
     await putCards(db, generateCardsForTables('p1', [2, 3], false))
-    await syncCardsToUnlockedTables(db, 'p1', [2], false)
+    await syncCardsForProfile(db, profile([2], false))
     const cards = await getCardsForProfile(db, 'p1')
-    expect(cards).toHaveLength(10)
-    expect(cards.every(c => c.a === 2)).toBe(true)
+    expect(cards).toHaveLength(20)
+    expect(cards.some(c => c.a === 3)).toBe(true)
     db.close()
   })
 
@@ -82,7 +86,7 @@ describe('syncCardsToUnlockedTables', () => {
     initial[0]!.totalSeen = 50
     initial[0]!.totalCorrect = 47
     await putCards(db, initial)
-    await syncCardsToUnlockedTables(db, 'p1', [2, 3], false)
+    await syncCardsForProfile(db, profile([2, 3], false))
     const cards = await getCardsForProfile(db, 'p1')
     const preserved = cards.find(c => c.id === initial[0]!.id)!
     expect(preserved.box).toBe(4)
@@ -94,9 +98,9 @@ describe('syncCardsToUnlockedTables', () => {
   it('handles empty unlockedTables (locks everything)', async () => {
     const db = await openDb()
     await putCards(db, generateCardsForTables('p1', [1, 2, 5], false))
-    await syncCardsToUnlockedTables(db, 'p1', [], false)
+    await syncCardsForProfile(db, profile([], false))
     const cards = await getCardsForProfile(db, 'p1')
-    expect(cards).toHaveLength(0)
+    expect(cards).toHaveLength(30)
     db.close()
   })
 
@@ -106,7 +110,7 @@ describe('syncCardsToUnlockedTables', () => {
     initial[0]!.box = 5
     initial[0]!.totalSeen = 99
     await putCards(db, initial)
-    await syncCardsToUnlockedTables(db, 'p1', [2], true)
+    await syncCardsForProfile(db, profile([2], true))
     const cards = await getCardsForProfile(db, 'p1')
     expect(cards).toHaveLength(20)
     expect(cards.filter(c => c.op === 'mul')).toHaveLength(10)
@@ -117,17 +121,17 @@ describe('syncCardsToUnlockedTables', () => {
     db.close()
   })
 
-  it('removes div cards when division is turned off, keeping mul progress', async () => {
+  it('keeps div cards when division is turned off, keeping mul progress', async () => {
     const db = await openDb()
     const initial = generateCardsForTables('p1', [2], true)
     const mul3 = initial.find(c => c.op === 'mul' && c.a === 2 && c.b === 3)!
     mul3.box = 4
     mul3.totalCorrect = 12
     await putCards(db, initial)
-    await syncCardsToUnlockedTables(db, 'p1', [2], false)
+    await syncCardsForProfile(db, profile([2], false))
     const cards = await getCardsForProfile(db, 'p1')
-    expect(cards).toHaveLength(10)
-    expect(cards.every(c => c.op === 'mul')).toBe(true)
+    expect(cards).toHaveLength(20)
+    expect(cards.filter(c => c.op === 'div')).toHaveLength(10)
     const preserved = cards.find(c => c.id === mul3.id)!
     expect(preserved.box).toBe(4)
     expect(preserved.totalCorrect).toBe(12)
@@ -144,11 +148,11 @@ describe('arithmetic persistence', () => {
         { ...generateArithCard('p1', () => 0.9), box: 2 as const, totalCorrect: 1 },
       ]
       await putCards(db, [...generateCardsForTables('p1', [2], true), ...mistakes])
-      await syncCardsToUnlockedTables(db, 'p1', [3], true)
+      await syncCardsForProfile(db, profile([3], true))
       for (const card of mistakes) expect(await db.get('cards', card.id)).toEqual(card)
-      await syncCardsToUnlockedTables(db, 'p1', [3], false)
+      await syncCardsForProfile(db, profile([3], false))
       for (const card of mistakes) expect(await db.get('cards', card.id)).toEqual(card)
-      expect((await getCardsForProfile(db, 'p1')).filter(c => c.op === 'div')).toEqual([])
+      expect((await getCardsForProfile(db, 'p1')).filter(c => c.op === 'div')).toHaveLength(20)
     } finally {
       db.close()
     }
@@ -171,4 +175,33 @@ describe('arithmetic persistence', () => {
       db.close()
     }
   })
+})
+
+function profile(unlockedTables: number[], divisionEnabled: boolean): Profile {
+  return {
+    id: 'p1', name: 'Ema', avatar: '🐝', createdAt: 1, selectedScene: 'bee',
+    unlockedTables, divisionEnabled, arithEnabled: true, clockEnabled: true, clockLevels: [],
+  }
+}
+
+it('preserves table and clock progress across off/on toggles and repeated syncs', async () => {
+  const db = await openDb()
+  try {
+    const enabled = { ...profile([2], true), clockLevels: ['hours'] as const }
+    const p: Profile = { ...enabled, clockLevels: [...enabled.clockLevels] }
+    await syncCardsForProfile(db, p)
+    expect(await getCardsForProfile(db, p.id)).toHaveLength(32)
+    const cards = await getCardsForProfile(db, p.id)
+    for (const c of cards) c.box = 4
+    await putCards(db, cards)
+    await syncCardsForProfile(db, { ...p, unlockedTables: [], divisionEnabled: false, clockLevels: [] })
+    expect(await getCardsForProfile(db, p.id)).toEqual(cards)
+    await syncCardsForProfile(db, p)
+    await syncCardsForProfile(db, p)
+    expect(await getCardsForProfile(db, p.id)).toEqual(cards)
+    expect(cards.filter(c => c.op === 'clk-read').map(c => c.id).sort())
+      .toEqual(cardsForClockLevel('p1', 'hours').map(c => c.id).sort())
+  } finally {
+    db.close()
+  }
 })

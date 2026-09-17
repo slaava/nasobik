@@ -7,6 +7,8 @@ export type Profile = {
   selectedScene: string
   divisionEnabled: boolean
   arithEnabled: boolean
+  clockEnabled: boolean
+  clockLevels: ClockLevel[]
 }
 
 // op decides how the card is rendered and how the expected answer is computed:
@@ -14,8 +16,8 @@ export type Profile = {
 //   div → "(a*b) ÷ a = ?", expected = b
 // For mul/div we store a as the table number (divisor) and b as the multiplier, so
 // the two ops form a clean pair per (a, b) fact with independent Leitner state.
-export type CardOp = 'mul' | 'div' | 'add' | 'sub'
-export type GameMode = 'tables' | 'arith'
+export type CardOp = 'mul' | 'div' | 'add' | 'sub' | 'clk-read' | 'clk-phrase' | 'clk-24to12' | 'clk-12to24'
+export type GameMode = 'tables' | 'arith' | 'clock'
 
 export type Card = {
   id: string
@@ -46,3 +48,5 @@ export type Session = {
   endedAt: number | null
   answers: AnswerEvent[]
 }
+
+export type ClockLevel = 'hours' | 'half' | 'quarter' | 'phrase' | 'five' | 'digital'

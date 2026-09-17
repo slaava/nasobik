@@ -8,10 +8,10 @@ import {
   putSession,
   getCardsForProfile,
   getSessionsForProfile,
-  syncCardsToUnlockedTables,
+  syncCardsForProfile,
 } from './db/repo'
-import type { Card, Profile, Session, GameMode } from './core/types'
-import { opsForMode } from './core/cards'
+import type { Card, Profile, Session, GameMode, ClockLevel } from './core/types'
+import { opsForMode, isCardActive } from './core/cards'
 import type { SessionState } from './core/session'
 import { SessionScreen } from './ui/SessionScreen'
 import { SessionSummary } from './ui/SessionSummary'
@@ -59,10 +59,12 @@ export default function App() {
     if (!profile) return
     const wrongCount = state.answers.filter(a => !a.correct).length
     setLastSummary({ correct: state.correctCount, wrong: wrongCount })
-    // The session deck only held this mode's cards; keep the other mode's
-    // cards and replace ours (retired arith cards are simply absent).
-    const modeOps = opsForMode(mode)
-    setCards(prev => [...prev.filter(c => !modeOps.includes(c.op)), ...state.cards])
+    const updated = new Map(state.cards.map(c => [c.id, c]))
+    const retired = new Set(state.retiredIds)
+    setCards(prev => [
+      ...prev.filter(c => !retired.has(c.id)).map(c => updated.get(c.id) ?? c),
+      ...state.cards.filter(c => !prev.some(p => p.id === c.id)),
+    ])
     const totalMs = state.answers.reduce((sum, a) => sum + a.rt, 0)
     const endedAt = Date.now()
     const newSession: Session = {
@@ -89,7 +91,7 @@ export default function App() {
     const updatedProfile = { ...profile, unlockedTables: next }
     const db = await openDb()
     await putProfile(db, updatedProfile)
-    await syncCardsToUnlockedTables(db, profile.id, next, updatedProfile.divisionEnabled)
+    await syncCardsForProfile(db, updatedProfile)
     const freshCards = await getCardsForProfile(db, profile.id)
     db.close()
     setProfile(updatedProfile)
@@ -101,12 +103,34 @@ export default function App() {
     const updatedProfile = { ...profile, divisionEnabled: !profile.divisionEnabled }
     const db = await openDb()
     await putProfile(db, updatedProfile)
-    await syncCardsToUnlockedTables(
-      db,
-      profile.id,
-      updatedProfile.unlockedTables,
-      updatedProfile.divisionEnabled,
-    )
+    await syncCardsForProfile(db, updatedProfile)
+    const freshCards = await getCardsForProfile(db, profile.id)
+    db.close()
+    setProfile(updatedProfile)
+    setCards(freshCards)
+  }
+
+  const onToggleClock = async () => {
+    if (!profile) return
+    const updatedProfile = { ...profile, clockEnabled: !profile.clockEnabled }
+    const db = await openDb()
+    await putProfile(db, updatedProfile)
+    await syncCardsForProfile(db, updatedProfile)
+    const freshCards = await getCardsForProfile(db, profile.id)
+    db.close()
+    setProfile(updatedProfile)
+    setCards(freshCards)
+  }
+
+  const onToggleClockLevel = async (level: ClockLevel) => {
+    if (!profile) return
+    const clockLevels = profile.clockLevels.includes(level)
+      ? profile.clockLevels.filter(l => l !== level)
+      : [...profile.clockLevels, level]
+    const updatedProfile = { ...profile, clockLevels }
+    const db = await openDb()
+    await putProfile(db, updatedProfile)
+    await syncCardsForProfile(db, updatedProfile)
     const freshCards = await getCardsForProfile(db, profile.id)
     db.close()
     setProfile(updatedProfile)
@@ -135,6 +159,12 @@ export default function App() {
     return <div className="flex h-full items-center justify-center bg-amber-50 text-amber-900">Načítám…</div>
   }
 
+  const games = [
+    { mode: 'tables' as const, glyph: '× ÷', label: 'Násobení' },
+    ...(profile.arithEnabled ? [{ mode: 'arith' as const, glyph: '+ −', label: 'Sčítání a odčítání' }] : []),
+    ...(profile.clockEnabled ? [{ mode: 'clock' as const, glyph: '🕒', label: 'Hodiny' }] : []),
+  ]
+
   if (phase === 'home') {
     return (
       <div className="relative flex flex-col h-full items-center justify-center bg-amber-50 gap-3 p-4 [@media(min-height:760px)]:gap-6 [@media(min-height:760px)]:p-8">
@@ -149,12 +179,9 @@ export default function App() {
         <img src={beeIdleUrl} alt="" className="h-[24dvh] [@media(min-height:760px)]:h-[32dvh] w-auto select-none" draggable={false} />
         <h1 className="text-4xl font-bold text-amber-900">Ahoj, {profile.name}!</h1>
         <p className="text-xl text-amber-800">Pojďme nakrmit včelku.</p>
-        {profile.arithEnabled ? (
-          <div className="flex flex-col gap-3">
-            {([
-              { mode: 'tables', glyph: '× ÷', label: 'Násobení' },
-              { mode: 'arith', glyph: '+ −', label: 'Sčítání a odčítání' },
-            ] as const).map(game => (
+        {games.length > 1 ? (
+          <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+            {games.map((game, index) => (
               <button
                 key={game.mode}
                 type="button"
@@ -162,10 +189,10 @@ export default function App() {
                   setMode(game.mode)
                   setPhase('playing')
                 }}
-                className="rounded-2xl bg-amber-500 text-white py-3 px-8 font-bold shadow active:scale-95"
+                className={`rounded-2xl bg-amber-500 text-white py-3 px-4 font-bold shadow active:scale-95 ${games.length === 3 && index === 2 ? 'col-span-2' : ''}`}
               >
                 <span className="block text-3xl">{game.glyph}</span>
-                <span className="block text-lg">{game.label}</span>
+                <span className="block text-base [@media(min-height:760px)]:text-lg">{game.label}</span>
               </button>
             ))}
           </div>
@@ -202,6 +229,10 @@ export default function App() {
         divisionEnabled={profile.divisionEnabled}
         arithEnabled={profile.arithEnabled}
         onToggleArith={onToggleArith}
+        clockEnabled={profile.clockEnabled}
+        clockLevels={profile.clockLevels}
+        onToggleClock={onToggleClock}
+        onToggleClockLevel={onToggleClockLevel}
         cards={cards}
         sessions={sessions}
         onRename={onRename}
@@ -215,7 +246,7 @@ export default function App() {
   if (phase === 'playing') {
     return (
       <SessionScreen
-        cards={cards.filter(c => opsForMode(mode).includes(c.op))}
+        cards={cards.filter(c => opsForMode(mode).includes(c.op) && isCardActive(c, profile))}
         mode={mode}
         profileId={profile.id}
         goalCount={beeScene.goalCount}

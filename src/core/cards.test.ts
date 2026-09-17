@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { generateCardsForTables, generateArithCard, isArithOp, opsForMode, expectedAnswer, formatQuestion, cardId } from './cards'
-import type { Card } from './types'
+import { generateCardsForTables, generateArithCard, isArithOp, opsForMode, expectedAnswer, formatQuestion, cardId, freshCard, isCorrectAnswer, formatAnswer, isCardActive, requiredCardsForProfile, CLOCK_OPS } from './cards'
+import type { Card, Profile } from './types'
 
 const mk = (overrides: Partial<Card>): Card => ({
   id: 'p1:3x7',
@@ -131,5 +131,60 @@ describe('arithmetic cards', () => {
     expect(opsForMode('arith')).toEqual(['add', 'sub'])
     expect(isArithOp('mul')).toBe(false)
     expect(isArithOp('div')).toBe(false)
+  })
+})
+
+describe('clock cards and active decks', () => {
+  it('encodes IDs and canonical answers, accepting ambiguity only for analog readings', () => {
+    expect(cardId('p', 'clk-read', 7, 30)).toBe('p:clk-read:7:30')
+    for (const op of ['clk-read', 'clk-phrase'] as const) {
+      const c = freshCard('p', op, 7, 30)
+      expect(expectedAnswer(c)).toBe(730)
+      expect(isCorrectAnswer(c, 730)).toBe(true)
+      expect(isCorrectAnswer(c, 1930)).toBe(true)
+      expect(isCorrectAnswer(c, 830)).toBe(false)
+      const noon = freshCard('p', op, 12, 30)
+      expect(isCorrectAnswer(noon, 1230)).toBe(true)
+      expect(isCorrectAnswer(noon, 30)).toBe(true)
+    }
+    const to12 = freshCard('p', 'clk-24to12', 19, 30)
+    const to24 = freshCard('p', 'clk-12to24', 19, 30)
+    expect(expectedAnswer(to12)).toBe(730)
+    expect(isCorrectAnswer(to12, 730)).toBe(true)
+    expect(isCorrectAnswer(to12, 1930)).toBe(false)
+    expect(expectedAnswer(to24)).toBe(1930)
+    expect(isCorrectAnswer(to24, 1930)).toBe(true)
+    expect(isCorrectAnswer(to24, 730)).toBe(false)
+    expect(formatAnswer(to24, 1930)).toBe('19:30')
+    expect(formatAnswer(freshCard('p', 'mul', 2, 3), 6)).toBe('6')
+  })
+
+  it('formats all clock question prompts', () => {
+    expect(CLOCK_OPS.map(op => formatQuestion(freshCard('p', op, 7, 30)))).toEqual([
+      'Kolik je hodin?', 'půl osmé', 'Kolik ukazují ručičkové hodiny?', 'Napiš čas digitálně.',
+    ])
+    expect(opsForMode('clock')).toEqual(CLOCK_OPS)
+  })
+
+  it('generates required cards and filters every operation by settings', () => {
+    const p: Profile = {
+      id: 'p', name: 'Ema', avatar: '🐝', createdAt: 1, selectedScene: 'bee',
+      unlockedTables: [2], divisionEnabled: true, arithEnabled: true,
+      clockEnabled: true, clockLevels: ['hours', 'half'],
+    }
+    expect(requiredCardsForProfile(p)).toHaveLength(44)
+    for (const op of ['mul', 'div'] as const) {
+      expect(isCardActive(freshCard('p', op, 2, 3), p)).toBe(true)
+      expect(isCardActive(freshCard('p', op, 3, 3), p)).toBe(false)
+    }
+    expect(isCardActive(freshCard('p', 'div', 2, 3), { ...p, divisionEnabled: false })).toBe(false)
+    for (const op of ['add', 'sub'] as const) expect(isCardActive(freshCard('p', op, 3, 2), p)).toBe(true)
+    expect(isCardActive(freshCard('p', 'clk-read', 7, 30), p)).toBe(true)
+    expect(isCardActive(freshCard('p', 'clk-read', 7, 15), p)).toBe(false)
+    for (const op of ['clk-phrase', 'clk-24to12', 'clk-12to24'] as const) {
+      const c = freshCard('p', op, op === 'clk-phrase' ? 7 : 19, 30)
+      expect(isCardActive(c, p)).toBe(false)
+      expect(isCardActive(c, { ...p, clockLevels: ['phrase', 'digital'] })).toBe(true)
+    }
   })
 })

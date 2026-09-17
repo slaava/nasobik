@@ -13,15 +13,18 @@ describe('bootstrapDefaultProfile', () => {
     expect(result.profile.name).toBe('Emička')
     expect(result.profile.unlockedTables).toEqual([1, 2, 5, 10])
     expect(result.profile.divisionEnabled).toBe(true)
-    // 4 tables × 10 multipliers × 2 ops
-    expect(result.cards).toHaveLength(80)
+    expect(result.profile.clockEnabled).toBe(true)
+    expect(result.profile.clockLevels).toEqual(['hours'])
+    expect(result.cards.filter(c => c.op === 'clk-read')).toHaveLength(12)
+    // 4 tables × 10 multipliers × 2 ops + 12 hours cards
+    expect(result.cards).toHaveLength(92)
   })
 
   it('is idempotent across runs', async () => {
     await bootstrapDefaultProfile()
     const second = await bootstrapDefaultProfile()
     expect(second.profile.name).toBe('Emička')
-    expect(second.cards).toHaveLength(80)
+    expect(second.cards).toHaveLength(92)
   })
 
   it('migrates legacy cards (no op field) to op="mul" and tops up div cards', async () => {
@@ -53,6 +56,9 @@ describe('bootstrapDefaultProfile', () => {
 
     const result = await bootstrapDefaultProfile()
     expect(result.profile.divisionEnabled).toBe(true)
+    expect(result.profile.clockEnabled).toBe(true)
+    expect(result.profile.clockLevels).toEqual(['hours'])
+    expect(result.cards.filter(c => c.op === 'clk-read')).toHaveLength(12)
 
     const db2 = await openDb()
     const stored = await getCardsForProfile(db2, 'anicka')
@@ -103,4 +109,12 @@ describe('arithmetic profile migration', () => {
     db.close()
     expect((await bootstrapDefaultProfile()).profile.arithEnabled).toBe(false)
   })
+})
+
+it('preserves explicitly disabled clocks across boots', async () => {
+  const { profile } = await bootstrapDefaultProfile()
+  const db = await openDb()
+  await putProfile(db, { ...profile, clockEnabled: false })
+  db.close()
+  expect((await bootstrapDefaultProfile()).profile.clockEnabled).toBe(false)
 })

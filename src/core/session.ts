@@ -1,6 +1,6 @@
 import type { Card, AnswerEvent, GameMode } from './types'
 import { applyAnswer, bumpExposure, pickNext, pickReady } from './leitner'
-import { expectedAnswer, generateArithCard } from './cards'
+import { isCorrectAnswer, generateArithCard } from './cards'
 
 export const ARITH_RETIRE_BOX = 3
 
@@ -124,8 +124,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       const card = state.mode === 'arith'
         ? state.cards.find(c => c.id === state.currentCard!.id) ?? state.currentCard
         : state.currentCard
-      const expected = expectedAnswer(card)
-      const correct = action.value === expected
+      const correct = isCorrectAnswer(card, action.value)
       const event: AnswerEvent = { a: card.a, b: card.b, correct, rt: action.rt, op: card.op }
 
       if (!correct) {
@@ -172,8 +171,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       const card = state.mode === 'arith'
         ? state.cards.find(c => c.id === state.currentCard!.id) ?? state.currentCard
         : state.currentCard
-      const expected = expectedAnswer(card)
-      if (action.value !== expected) return state
+      if (!isCorrectAnswer(card, action.value)) return state
 
       const updated = applyAnswer(card, { correct: false, rt: 0 })
       const bumped = bumpAllExcept(state.cards, card.id)

@@ -1,5 +1,6 @@
+import { CLOCK_LEVELS, CLOCK_LEVEL_LABELS, cardsForClockLevel, clockLevelOf, isClockOp } from '../core/clock'
 import { useEffect, useState } from 'react'
-import type { Card, Session } from '../core/types'
+import type { Card, Session, ClockLevel } from '../core/types'
 import { todayStats, weekStats } from '../core/stats'
 import { formatQuestion, isArithOp } from '../core/cards'
 import { Heatmap } from './Heatmap'
@@ -8,6 +9,10 @@ type Props = {
   name: string
   unlockedTables: number[]
   divisionEnabled: boolean
+  clockEnabled: boolean
+  clockLevels: ClockLevel[]
+  onToggleClock: () => void
+  onToggleClockLevel: (level: ClockLevel) => void
   arithEnabled: boolean
   onToggleArith: () => void
   cards: Card[]
@@ -24,6 +29,10 @@ export function ParentSettings({
   divisionEnabled,
   arithEnabled,
   onToggleArith,
+  clockEnabled,
+  clockLevels,
+  onToggleClock,
+  onToggleClockLevel,
   cards,
   sessions,
   onRename,
@@ -137,11 +146,35 @@ export function ParentSettings({
       </section>
 
       <section>
+        <h2 className="text-xl font-semibold text-amber-900 mb-1">Hodiny</h2>
+        <label className="inline-flex items-center gap-3 rounded-2xl bg-white shadow px-4 py-3 cursor-pointer select-none">
+          <input type="checkbox" checked={clockEnabled} onChange={onToggleClock} className="w-5 h-5" />
+          <span className="text-lg text-amber-900">Poznávání hodin</span>
+        </label>
+        <p className="text-xs text-amber-600 mt-2 max-w-md">Třetí hra na úvodní obrazovce. Úrovně odemykej postupně podle toho, co dítě zvládá.</p>
+        <div className="flex flex-col gap-2 max-w-md mt-3">
+          {CLOCK_LEVELS.map(level => {
+            const label = CLOCK_LEVEL_LABELS[level]
+            const mastered = cards.filter(c => isClockOp(c.op) && clockLevelOf(c) === level && c.box >= 4).length
+            const total = cardsForClockLevel('', level).length
+            return (
+              <label key={level} className={`flex items-center gap-2 rounded-2xl p-3 shadow cursor-pointer ${clockLevels.includes(level) ? 'bg-amber-300' : 'bg-white'}`}>
+                <input type="checkbox" aria-label={`Úroveň ${label}`} checked={clockLevels.includes(level)} onChange={() => onToggleClockLevel(level)} className="w-5 h-5" />
+                <span className="text-amber-900">{label}</span>
+                <span className="ml-auto shrink-0 tabular-nums text-sm text-amber-700">{mastered} / {total} umí</span>
+              </label>
+            )
+          })}
+        </div>
+        <p className="text-xs text-amber-600 mt-2 max-w-md">Pokrok zůstává — vypnutou úroveň po zapnutí navážeš tam, kde dítě skončilo.</p>
+      </section>
+
+      <section>
         <h2 className="text-xl font-semibold text-amber-900 mb-1">Co umí</h2>
         <p className="text-sm text-amber-700 mb-3">
           Barevná mapa po jednotlivých příkladech. Červeně se teprve učí, zeleně už umí.
         </p>
-        <Heatmap cards={cards} />
+        <Heatmap cards={cards} unlockedTables={unlockedTables} divisionEnabled={divisionEnabled} />
         <div className="flex gap-3 mt-3 text-xs text-amber-700 flex-wrap">
           <Legend label="učí se" className="bg-red-300" />
           <Legend label="zlepšuje se" className="bg-orange-300" />

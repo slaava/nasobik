@@ -1,3 +1,4 @@
+import { cardsForClockLevel } from '../core/clock'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -9,6 +10,10 @@ const baseProps = {
   unlockedTables: [1, 2, 5],
   divisionEnabled: false,
   arithEnabled: true,
+  clockEnabled: true,
+  clockLevels: [],
+  onToggleClock: () => {},
+  onToggleClockLevel: () => {},
   onToggleArith: () => {},
   cards: [],
   sessions: [],
@@ -91,4 +96,18 @@ describe('arithmetic settings', () => {
     render(<ParentSettings {...baseProps} />)
     expect(screen.getByText('Zatím žádné rozpracované chyby.')).toBeInTheDocument()
   })
+})
+
+it('shows six clock levels, retained mastery and both clock toggles', async () => {
+  const cards = cardsForClockLevel('p1', 'hours')
+  cards.slice(0, 3).forEach(c => { c.box = 4 })
+  const onToggleClock = vi.fn()
+  const onToggleClockLevel = vi.fn()
+  render(<ParentSettings {...baseProps} cards={cards} onToggleClock={onToggleClock} onToggleClockLevel={onToggleClockLevel} />)
+  expect(screen.getAllByRole('checkbox', { name: /^Úroveň / })).toHaveLength(6)
+  expect(screen.getByText('3 / 12 umí')).toBeInTheDocument()
+  await userEvent.click(screen.getByLabelText('Úroveň Půlhodiny'))
+  expect(onToggleClockLevel).toHaveBeenCalledWith('half')
+  await userEvent.click(screen.getByLabelText('Poznávání hodin'))
+  expect(onToggleClock).toHaveBeenCalledTimes(1)
 })

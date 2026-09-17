@@ -1,17 +1,13 @@
-import { openDb, getProfile, putProfile, getCardsForProfile, putCards } from './db/repo'
-import { generateCardsForTables, cardId } from './core/cards'
+import { openDb, getProfile, putProfile, getCardsForProfile, putCards, syncCardsForProfile } from './db/repo'
 import type { Profile, Card, CardOp } from './core/types'
 
 const DEFAULT_ID = 'anicka'
 
-// Legacy profiles (saved before divisionEnabled / op existed) come back from
-// IndexedDB without those fields. We default division ON and migrate any
-// legacy cards to op='mul', then top up division cards if missing. The
-// migrated profile + new cards are persisted so subsequent boots are clean.
+// Fill missing profile defaults, migrate legacy cards to op='mul', and
+// insert any required cards without overwriting stored Leitner progress.
 export async function bootstrapDefaultProfile(): Promise<{ profile: Profile; cards: Card[] }> {
   const db = await openDb()
   let profile = await getProfile(db, DEFAULT_ID)
-  let isNewProfile = false
   if (!profile) {
     profile = {
       id: DEFAULT_ID,
@@ -22,36 +18,27 @@ export async function bootstrapDefaultProfile(): Promise<{ profile: Profile; car
       selectedScene: 'bee',
       divisionEnabled: true,
       arithEnabled: true,
+      clockEnabled: true,
+      clockLevels: ['hours'],
     }
     await putProfile(db, profile)
-    isNewProfile = true
-  } else if (profile.divisionEnabled === undefined || profile.arithEnabled === undefined) {
+  } else if (profile.divisionEnabled === undefined || profile.arithEnabled === undefined || profile.clockEnabled === undefined || profile.clockLevels === undefined) {
     profile = {
       ...profile,
       divisionEnabled: profile.divisionEnabled ?? true,
       arithEnabled: profile.arithEnabled ?? true,
+      clockEnabled: profile.clockEnabled ?? true,
+      clockLevels: profile.clockLevels ?? ['hours'],
     }
     await putProfile(db, profile)
   }
 
   let cards = await getCardsForProfile(db, profile.id)
 
-  if (cards.length === 0) {
-    cards = generateCardsForTables(profile.id, profile.unlockedTables, profile.divisionEnabled)
-    await putCards(db, cards)
-  } else if (!isNewProfile) {
-    const { migrated, changed } = migrateLegacyCards(cards)
-    cards = migrated
-    if (changed) await putCards(db, cards)
-
-    if (profile.divisionEnabled) {
-      const missingDiv = missingDivisionCards(profile.id, profile.unlockedTables, cards)
-      if (missingDiv.length > 0) {
-        cards = [...cards, ...missingDiv]
-        await putCards(db, missingDiv)
-      }
-    }
-  }
+  const { migrated, changed } = migrateLegacyCards(cards)
+  if (changed) await putCards(db, migrated)
+  await syncCardsForProfile(db, profile)
+  cards = await getCardsForProfile(db, profile.id)
 
   db.close()
   return { profile, cards }
@@ -67,30 +54,4 @@ function migrateLegacyCards(cards: Card[]): { migrated: Card[]; changed: boolean
     return c
   })
   return { migrated, changed }
-}
-
-function missingDivisionCards(profileId: string, unlockedTables: number[], existing: Card[]): Card[] {
-  const have = new Set(existing.map(c => c.id))
-  const missing: Card[] = []
-  for (const a of unlockedTables) {
-    for (let b = 1; b <= 10; b++) {
-      const id = cardId(profileId, 'div', a, b)
-      if (!have.has(id)) {
-        missing.push({
-          id,
-          profileId,
-          op: 'div',
-          a,
-          b,
-          box: 1,
-          exposuresSinceLastSeen: 0,
-          sessionsSinceLastSeen: 0,
-          lastRT: null,
-          totalSeen: 0,
-          totalCorrect: 0,
-        })
-      }
-    }
-  }
-  return missing
 }

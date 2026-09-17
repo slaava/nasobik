@@ -11,6 +11,8 @@ const BOX_COLOR: Record<number, string> = {
 
 type Props = {
   cards: Card[]
+  unlockedTables: number[]
+  divisionEnabled: boolean
 }
 
 // 10×10 grid coloured by the Leitner box of each fact. Row = first factor
@@ -18,8 +20,8 @@ type Props = {
 // same (a, b) we colour the cell by the worst of the two boxes — the child
 // hasn't really "got" a fact until both directions are fluent. The tooltip
 // breaks down the per-op state. Locked rows stay grey.
-export function Heatmap({ cards }: Props) {
-  cards = cards.filter(c => c.op === 'mul' || c.op === 'div')
+export function Heatmap({ cards, unlockedTables, divisionEnabled }: Props) {
+  cards = cards.filter(c => c.op === 'mul' || (divisionEnabled && c.op === 'div'))
   type CellState = { mul?: Card; div?: Card }
   const byKey = new Map<string, CellState>()
   for (const c of cards) {
@@ -42,7 +44,7 @@ export function Heatmap({ cards }: Props) {
           <div key={`row-${a}`} className="contents">
             <div className="text-center text-amber-800 font-semibold py-1 tabular-nums">{a}</div>
             {Array.from({ length: 10 }, (_, j) => j + 1).map(b => {
-              const cell = byKey.get(`${a}-${b}`) ?? {}
+              const cell = unlockedTables.includes(a) ? byKey.get(`${a}-${b}`) ?? {} : {}
               const boxes = [cell.mul?.box, cell.div?.box].filter((x): x is Card['box'] => x !== undefined)
               const box = boxes.length === 0 ? 0 : Math.min(...boxes)
               const title = describeCell(a, b, cell)

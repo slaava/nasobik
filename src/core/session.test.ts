@@ -1,3 +1,4 @@
+import { cardsForClockLevel } from './clock'
 import { describe, it, expect } from 'vitest'
 import { sessionReducer, initSessionState } from './session'
 import { generateCardsForTables, generateArithCard, expectedAnswer } from './cards'
@@ -246,5 +247,33 @@ describe('arithmetic sessions', () => {
     expect(start.mode).toBe('tables')
     expect(next.retiredIds).toEqual([])
     expect(next.answers[0]?.op).toBe('mul')
+  })
+})
+
+describe('clock session', () => {
+  const start = () => sessionReducer(initSessionState(), {
+    type: 'START', cards: cardsForClockLevel('p1', 'hours'), mode: 'clock',
+    goalCount: 3, blockingTable: null,
+  })
+
+  it.each([false, true])('counts correct readings, alternate=%s', alternate => {
+    const state = start()
+    expect(state.phase).toBe('asking')
+    expect(state.currentCard?.op).toBe('clk-read')
+    const a = state.currentCard!.a
+    const next = sessionReducer(state, { type: 'SUBMIT_ANSWER', value: (alternate ? (a + 12) % 24 : a) * 100, rt: 100 })
+    expect(next.correctCount).toBe(1)
+    expect(next.retiredIds).toEqual([])
+  })
+
+  it('waits on wrong correction taps and accepts the alternate reading', () => {
+    const state = start()
+    const wrong = sessionReducer(state, { type: 'SUBMIT_ANSWER', value: -1, rt: 100 })
+    expect(wrong.phase).toBe('showing-correction')
+    expect(sessionReducer(wrong, { type: 'CONFIRM_CORRECTION', value: -1 })).toBe(wrong)
+    const corrected = sessionReducer(wrong, { type: 'CONFIRM_CORRECTION', value: ((state.currentCard!.a + 12) % 24) * 100 })
+    expect(corrected.phase).toBe('asking')
+    expect(corrected.correctCount).toBe(0)
+    expect(corrected.cards.find(c => c.id === state.currentCard!.id)?.box).toBe(1)
   })
 })

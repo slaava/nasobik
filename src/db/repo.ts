@@ -1,7 +1,7 @@
 import { openDB, type IDBPDatabase } from 'idb'
 import { DB_NAME, DB_VERSION, type NasobikDB } from './schema'
-import type { Profile, Card, CardOp, Session } from '../core/types'
-import { cardId, isArithOp } from '../core/cards'
+import type { Profile, Card, Session } from '../core/types'
+import { requiredCardsForProfile } from '../core/cards'
 
 export async function openDb(): Promise<IDBPDatabase<NasobikDB>> {
   return openDB<NasobikDB>(DB_NAME, DB_VERSION, {
@@ -50,53 +50,14 @@ export async function getSessionsForProfile(
   return db.getAllFromIndex('sessions', 'by-profile', profileId)
 }
 
-// Reconciles the cards collection with a new (unlockedTables, divisionEnabled)
-// state. Removes cards whose table is no longer unlocked and removes div cards
-// when division is disabled. Inserts fresh Box-1 cards for newly required
-// (table, op) combinations. Cards that should still exist are left untouched
-// so the child does not lose Leitner progress when toggling.
-export async function syncCardsToUnlockedTables(
+// Insert missing cards only; inactive cards retain all their progress.
+export async function syncCardsForProfile(
   db: IDBPDatabase<NasobikDB>,
-  profileId: string,
-  unlockedTables: number[],
-  divisionEnabled: boolean,
+  profile: Profile,
 ): Promise<void> {
-  const existing = (await getCardsForProfile(db, profileId)).filter(c => !isArithOp(c.op))
-  const unlocked = new Set(unlockedTables)
-  const requiredOps: CardOp[] = divisionEnabled ? ['mul', 'div'] : ['mul']
-
-  const isRequired = (c: Card) => unlocked.has(c.a) && requiredOps.includes(c.op)
-  const toDelete = existing.filter(c => !isRequired(c))
-  const keptIds = new Set(existing.filter(isRequired).map(c => c.id))
-
-  const newCards: Card[] = []
-  for (const a of unlockedTables) {
-    for (let b = 1; b <= 10; b++) {
-      for (const op of requiredOps) {
-        const id = cardId(profileId, op, a, b)
-        if (!keptIds.has(id)) {
-          newCards.push({
-            id,
-            profileId,
-            op,
-            a,
-            b,
-            box: 1,
-            exposuresSinceLastSeen: 0,
-            sessionsSinceLastSeen: 0,
-            lastRT: null,
-            totalSeen: 0,
-            totalCorrect: 0,
-          })
-        }
-      }
-    }
-  }
-
-  const tx = db.transaction('cards', 'readwrite')
-  await Promise.all(toDelete.map(c => tx.store.delete(c.id)))
-  await Promise.all(newCards.map(c => tx.store.put(c)))
-  await tx.done
+  const existing = new Set((await getCardsForProfile(db, profile.id)).map(c => c.id))
+  const missing = requiredCardsForProfile(profile).filter(c => !existing.has(c.id))
+  if (missing.length) await putCards(db, missing)
 }
 
 export async function deleteCards(db: IDBPDatabase<NasobikDB>, ids: string[]): Promise<void> {
