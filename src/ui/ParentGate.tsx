@@ -24,11 +24,11 @@ export function ParentGate({ onUnlock, onCancel }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-amber-50 p-8 gap-6 items-center justify-center">
-      <h1 className="text-4xl font-bold text-amber-900">
+    <div className="flex flex-col h-full bg-paper text-ink p-8 space-y-6 items-center justify-center">
+      <h1 className="text-4xl font-bold text-ink">
         {a} + {b} = ?
       </h1>
-      <p className="text-amber-700">Tato část je pro rodiče.</p>
+      <p className="text-ink">Tato část je pro rodiče.</p>
       <input
         type="text"
         inputMode="numeric"
@@ -39,22 +39,22 @@ export function ParentGate({ onUnlock, onCancel }: Props) {
         }}
         onKeyDown={e => e.key === 'Enter' && submit()}
         autoFocus
-        className={`text-3xl rounded-2xl bg-white px-6 py-4 shadow w-48 text-center text-amber-900 ${
-          err ? 'ring-4 ring-red-300' : ''
+        className={`text-3xl rounded-2xl bg-card px-6 py-4 w-48 text-center text-ink ${
+          err ? 'border-2 border-nose' : 'border-[1.5px] border-ink'
         }`}
       />
-      <div className="flex gap-3">
+      <div className="flex space-x-3">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-2xl bg-white text-amber-900 py-3 px-6 shadow font-semibold active:scale-95"
+          className="rounded-2xl bg-card text-ink py-3 px-6 border-[1.5px] border-ink font-semibold active:scale-95"
         >
           Zpět
         </button>
         <button
           type="button"
           onClick={submit}
-          className="rounded-2xl bg-amber-500 text-white py-3 px-6 shadow font-bold active:scale-95"
+          className="rounded-2xl bg-accent text-accent-fg border-2 border-accent py-3 px-6 font-bold active:scale-95"
         >
           Pokračovat
         </button>

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import type { Card, Session, ClockLevel } from '../core/types'
 import { todayStats, weekStats } from '../core/stats'
 import { formatQuestion, isArithOp } from '../core/cards'
-import { Heatmap } from './Heatmap'
+import { Heatmap, HeatmapSwatch } from './Heatmap'
 import { useEink } from '../eink'
 
 type Props = {
@@ -60,16 +60,16 @@ export function ParentSettings({
   }
 
   return (
-    <div className="flex flex-col h-full bg-amber-50 p-6 gap-6 overflow-y-auto">
+    <div className="flex flex-col h-full bg-paper text-ink p-6 space-y-6 overflow-y-auto">
       <header className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-amber-900">Pro rodiče</h1>
-        <button type="button" onClick={onBack} className="text-amber-700 underline text-base">
+        <h1 className="text-3xl font-bold text-ink">Pro rodiče</h1>
+        <button type="button" onClick={onBack} className="text-ink underline text-base">
           Zpět
         </button>
       </header>
 
       <section className="space-y-2">
-        <label htmlFor="child-name" className="block text-xl font-semibold text-amber-900">
+        <label htmlFor="child-name" className="block text-xl font-semibold text-ink">
           Jméno dítěte
         </label>
         <input
@@ -80,13 +80,13 @@ export function ParentSettings({
           onBlur={commitName}
           onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
           maxLength={20}
-          className="rounded-2xl bg-white px-5 py-3 text-xl shadow w-full max-w-sm text-amber-900"
+          className="rounded-2xl bg-card px-5 py-3 text-xl border-[1.5px] border-ink w-full max-w-sm text-ink"
         />
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-amber-900 mb-1">Řady násobilky</h2>
-        <p className="text-sm text-amber-700 mb-4">
+        <h2 className="text-xl font-semibold text-ink mb-1">Řady násobilky</h2>
+        <p className="text-sm text-ink mb-4">
           Zaškrtni jen ty řady, které právě probírá ve škole.
         </p>
         <div className="grid grid-cols-5 gap-3 max-w-2xl">
@@ -95,8 +95,8 @@ export function ParentSettings({
             return (
               <label
                 key={n}
-                className={`flex items-center justify-center gap-2 rounded-2xl p-4 shadow cursor-pointer select-none transition ${
-                  on ? 'bg-amber-300' : 'bg-white'
+                className={`flex items-center justify-center space-x-2 rounded-2xl p-4 border-[1.5px] border-ink cursor-pointer select-none ${
+                  on ? 'bg-accent text-accent-fg' : 'bg-card'
                 }`}
               >
                 <input
@@ -106,60 +106,60 @@ export function ParentSettings({
                   onChange={() => onToggleTable(n)}
                   className="w-5 h-5"
                 />
-                <span className="text-2xl font-bold text-amber-900 tabular-nums">{n}×</span>
+                <span className="text-2xl font-bold tabular-nums">{n}×</span>
               </label>
             )
           })}
         </div>
-        <p className="text-xs text-amber-600 mt-2 max-w-md">
+        <p className="text-xs text-ink mt-2 max-w-md">
           Pokrok zůstává — vypnutou řadu po zapnutí navážeš tam, kde dítě skončilo.
         </p>
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-amber-900 mb-1">Operace</h2>
-        <div className="flex flex-col gap-3 items-start">
-          <label className="inline-flex items-center gap-3 rounded-2xl bg-white shadow px-4 py-3 cursor-pointer select-none">
+        <h2 className="text-xl font-semibold text-ink mb-1">Operace</h2>
+        <div className="flex flex-col space-y-3 items-start">
+          <label className="inline-flex items-center space-x-3 rounded-2xl bg-card border-[1.5px] border-ink px-4 py-3 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={divisionEnabled}
               onChange={onToggleDivision}
               className="w-5 h-5"
             />
-            <span className="text-lg text-amber-900">Procvičovat i dělení</span>
+            <span className="text-lg text-ink">Procvičovat i dělení</span>
           </label>
-          <p className="text-xs text-amber-600 mt-2 max-w-md">
+          <p className="text-xs text-ink mt-2 max-w-md">
             Ke každému příkladu typu <span className="tabular-nums">6 × 7</span> přidá i opačný{' '}
             <span className="tabular-nums">42 ÷ 6</span>. Pokrok pro každý směr je samostatný.
           </p>
-          <label className="inline-flex items-center gap-3 rounded-2xl bg-white shadow px-4 py-3 cursor-pointer select-none">
+          <label className="inline-flex items-center space-x-3 rounded-2xl bg-card border-[1.5px] border-ink px-4 py-3 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={arithEnabled}
               onChange={onToggleArith}
               className="w-5 h-5"
             />
-            <span className="text-lg text-amber-900">Sčítání a odčítání do 100</span>
+            <span className="text-lg text-ink">Sčítání a odčítání do 100</span>
           </label>
-          <p className="text-xs text-amber-600 mt-2 max-w-md">
+          <p className="text-xs text-ink mt-2 max-w-md">
             Přidá na úvodní obrazovku druhou hru. Příklady jsou náhodné do 100, chybné se vrací, dokud je dítě neumí.
           </p>
         </div>
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-amber-900 mb-1">Zobrazení</h2>
-        <div className="flex flex-col gap-3 items-start">
-          <label className="inline-flex items-center gap-3 rounded-2xl bg-white shadow px-4 py-3 cursor-pointer select-none">
+        <h2 className="text-xl font-semibold text-ink mb-1">Zobrazení</h2>
+        <div className="flex flex-col space-y-3 items-start">
+          <label className="inline-flex items-center space-x-3 rounded-2xl bg-card border-[1.5px] border-ink px-4 py-3 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={eink}
               onChange={e => setEink(e.target.checked)}
               className="w-5 h-5"
             />
-            <span className="text-lg text-amber-900">Režim pro e-ink čtečku</span>
+            <span className="text-lg text-ink">Režim pro e-ink čtečku</span>
           </label>
-          <p className="text-xs text-amber-600 mt-2 max-w-md">
+          <p className="text-xs text-ink mt-2 max-w-md">
             Bez animací, černobíle a s vysokým kontrastem. Platí pro toto zařízení, ne pro profil.
             Zapne se i otevřením adresy s <span className="font-mono">?eink=1</span>.
           </p>
@@ -167,56 +167,56 @@ export function ParentSettings({
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-amber-900 mb-1">Hodiny</h2>
-        <label className="inline-flex items-center gap-3 rounded-2xl bg-white shadow px-4 py-3 cursor-pointer select-none">
+        <h2 className="text-xl font-semibold text-ink mb-1">Hodiny</h2>
+        <label className="inline-flex items-center space-x-3 rounded-2xl bg-card border-[1.5px] border-ink px-4 py-3 cursor-pointer select-none">
           <input type="checkbox" checked={clockEnabled} onChange={onToggleClock} className="w-5 h-5" />
-          <span className="text-lg text-amber-900">Poznávání hodin</span>
+          <span className="text-lg text-ink">Poznávání hodin</span>
         </label>
-        <p className="text-xs text-amber-600 mt-2 max-w-md">Třetí hra na úvodní obrazovce. Úrovně odemykej postupně podle toho, co dítě zvládá.</p>
-        <div className="flex flex-col gap-2 max-w-md mt-3">
+        <p className="text-xs text-ink mt-2 max-w-md">Třetí hra na úvodní obrazovce. Úrovně odemykej postupně podle toho, co dítě zvládá.</p>
+        <div className="flex flex-col space-y-2 max-w-md mt-3">
           {CLOCK_LEVELS.map(level => {
             const label = CLOCK_LEVEL_LABELS[level]
             const mastered = cards.filter(c => isClockOp(c.op) && clockLevelOf(c) === level && c.box >= 4).length
             const total = cardsForClockLevel('', level).length
             return (
-              <label key={level} className={`flex items-center gap-2 rounded-2xl p-3 shadow cursor-pointer ${clockLevels.includes(level) ? 'bg-amber-300' : 'bg-white'}`}>
+              <label key={level} className={`flex items-center space-x-2 rounded-2xl p-3 border-[1.5px] border-ink cursor-pointer ${clockLevels.includes(level) ? 'bg-accent text-accent-fg' : 'bg-card'}`}>
                 <input type="checkbox" aria-label={`Úroveň ${label}`} checked={clockLevels.includes(level)} onChange={() => onToggleClockLevel(level)} className="w-5 h-5" />
-                <span className="text-amber-900">{label}</span>
-                <span className="ml-auto shrink-0 tabular-nums text-sm text-amber-700">{mastered} / {total} umí</span>
+                <span>{label}</span>
+                <span className="ml-auto shrink-0 tabular-nums text-sm">{mastered} / {total} umí</span>
               </label>
             )
           })}
         </div>
-        <p className="text-xs text-amber-600 mt-2 max-w-md">Pokrok zůstává — vypnutou úroveň po zapnutí navážeš tam, kde dítě skončilo.</p>
+        <p className="text-xs text-ink mt-2 max-w-md">Pokrok zůstává — vypnutou úroveň po zapnutí navážeš tam, kde dítě skončilo.</p>
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-amber-900 mb-1">Co umí</h2>
-        <p className="text-sm text-amber-700 mb-3">
-          Barevná mapa po jednotlivých příkladech. Červeně se teprve učí, zeleně už umí.
+        <h2 className="text-xl font-semibold text-ink mb-1">Co umí</h2>
+        <p className="text-sm text-ink mb-3">
+          Mapa po jednotlivých příkladech. Čím tmavší políčko, tím lépe příklad umí.
         </p>
         <Heatmap cards={cards} unlockedTables={unlockedTables} divisionEnabled={divisionEnabled} />
-        <div className="flex gap-3 mt-3 text-xs text-amber-700 flex-wrap">
-          <Legend label="učí se" className="bg-red-300" />
-          <Legend label="zlepšuje se" className="bg-orange-300" />
-          <Legend label="ví" className="bg-yellow-300" />
-          <Legend label="umí" className="bg-lime-400" />
-          <Legend label="automaticky" className="bg-green-600" />
-          <Legend label="zamčená řada" className="bg-gray-200" />
+        <div className="flex space-x-3 mt-3 text-xs text-ink flex-wrap">
+          <Legend label="učí se" box={1} />
+          <Legend label="zlepšuje se" box={2} />
+          <Legend label="ví" box={3} />
+          <Legend label="umí" box={4} />
+          <Legend label="automaticky" box={5} />
+          <Legend label="zamčená řada" box={0} />
         </div>
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-amber-900 mb-1">Sčítání a odčítání: kde chybuje</h2>
-        <p className="text-sm text-amber-700 mb-3">
+        <h2 className="text-xl font-semibold text-ink mb-1">Sčítání a odčítání: kde chybuje</h2>
+        <p className="text-sm text-ink mb-3">
           Příklady, které dítě spletlo a ještě se k nim vracíme.
         </p>
         {arithCards.length ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap space-x-2">
             {arithCards.map(card => (
               <span
                 key={card.id}
-                className="rounded-xl bg-white shadow px-3 py-1.5 text-amber-900 tabular-nums"
+                className="rounded-xl bg-card border-[1.5px] border-ink px-3 py-1.5 text-ink tabular-nums"
                 title={`viděno ${card.totalSeen}× · správně ${card.totalCorrect}×`}
               >
                 {formatQuestion(card)}
@@ -224,12 +224,12 @@ export function ParentSettings({
             ))}
           </div>
         ) : (
-          <p className="text-sm text-amber-700">Zatím žádné rozpracované chyby.</p>
+          <p className="text-sm text-ink">Zatím žádné rozpracované chyby.</p>
         )}
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-amber-900 mb-1">Statistiky</h2>
+        <h2 className="text-xl font-semibold text-ink mb-1">Statistiky</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
           <StatCard
             title="Dnes"
@@ -259,10 +259,10 @@ export function ParentSettings({
   )
 }
 
-function Legend({ label, className }: { label: string; className: string }) {
+function Legend({ label, box }: { label: string; box: number }) {
   return (
-    <span className="inline-flex items-center gap-1">
-      <span className={`inline-block w-3 h-3 rounded ${className}`} />
+    <span className="inline-flex items-center space-x-1">
+      <HeatmapSwatch box={box} />
       {label}
     </span>
   )
@@ -270,9 +270,9 @@ function Legend({ label, className }: { label: string; className: string }) {
 
 function StatCard({ title, lines }: { title: string; lines: string[] }) {
   return (
-    <div className="bg-white rounded-2xl p-4 shadow">
-      <div className="text-amber-800 font-semibold mb-1">{title}</div>
-      <ul className="text-amber-900 space-y-0.5">
+    <div className="bg-card rounded-2xl p-4 border-[1.5px] border-ink">
+      <div className="text-ink font-semibold mb-1">{title}</div>
+      <ul className="text-ink space-y-0.5">
         {lines.filter(Boolean).map((line, i) => (
           <li key={i} className="tabular-nums">{line}</li>
         ))}

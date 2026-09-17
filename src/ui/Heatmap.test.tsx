@@ -49,3 +49,8 @@ it('greys stored locked rows and ignores disabled division in colour and tooltip
   expect(container.querySelectorAll('[data-box="5"]')).toHaveLength(10)
   expect(container.querySelector('[title*="÷"]')).toBeNull()
 })
+
+it('uses a grey ramp via data-box, not hue classes', () => {
+  const { container } = render(<Heatmap cards={generateCardsForTables('p1', [1], false)} unlockedTables={[1]} divisionEnabled={false} />)
+  expect(container.innerHTML).not.toMatch(/bg-(red|orange|yellow|lime|green|gray)-/)
+})
