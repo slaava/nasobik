@@ -1,7 +1,7 @@
 import { openDB, type IDBPDatabase } from 'idb'
 import { DB_NAME, DB_VERSION, type NasobikDB } from './schema'
 import type { Profile, Card, CardOp, Session } from '../core/types'
-import { cardId } from '../core/cards'
+import { cardId, isArithOp } from '../core/cards'
 
 export async function openDb(): Promise<IDBPDatabase<NasobikDB>> {
   return openDB<NasobikDB>(DB_NAME, DB_VERSION, {
@@ -61,7 +61,7 @@ export async function syncCardsToUnlockedTables(
   unlockedTables: number[],
   divisionEnabled: boolean,
 ): Promise<void> {
-  const existing = await getCardsForProfile(db, profileId)
+  const existing = (await getCardsForProfile(db, profileId)).filter(c => !isArithOp(c.op))
   const unlocked = new Set(unlockedTables)
   const requiredOps: CardOp[] = divisionEnabled ? ['mul', 'div'] : ['mul']
 
@@ -96,5 +96,11 @@ export async function syncCardsToUnlockedTables(
   const tx = db.transaction('cards', 'readwrite')
   await Promise.all(toDelete.map(c => tx.store.delete(c.id)))
   await Promise.all(newCards.map(c => tx.store.put(c)))
+  await tx.done
+}
+
+export async function deleteCards(db: IDBPDatabase<NasobikDB>, ids: string[]): Promise<void> {
+  const tx = db.transaction('cards', 'readwrite')
+  await Promise.all(ids.map(id => tx.store.delete(id)))
   await tx.done
 }

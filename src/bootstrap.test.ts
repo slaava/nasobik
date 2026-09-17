@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { bootstrapDefaultProfile } from './bootstrap'
-import { openDb, putProfile, putCards, getCardsForProfile } from './db/repo'
+import { openDb, putProfile, putCards, getCardsForProfile, getProfile } from './db/repo'
 import type { Card, Profile } from './core/types'
 
 beforeEach(() => {
@@ -63,5 +63,44 @@ describe('bootstrapDefaultProfile', () => {
     expect(migrated.box).toBe(4)
     expect(migrated.totalSeen).toBe(12)
     expect(stored.filter(c => c.op === 'div').length).toBe(10)
+  })
+})
+
+describe('arithmetic profile migration', () => {
+  it('enables arithmetic on a fresh profile and persists it', async () => {
+    const { profile } = await bootstrapDefaultProfile()
+    expect(profile.arithEnabled).toBe(true)
+    const db = await openDb()
+    try {
+      expect((await getProfile(db, profile.id))?.arithEnabled).toBe(true)
+    } finally {
+      db.close()
+    }
+  })
+
+  it.each([false, undefined])('migrates a legacy profile with divisionEnabled=%s', async divisionEnabled => {
+    const db = await openDb()
+    await putProfile(db, {
+      id: 'anicka', name: 'Emička', avatar: '🐝', createdAt: 1,
+      unlockedTables: [2], selectedScene: 'bee', divisionEnabled,
+    } as Profile)
+    db.close()
+    const { profile } = await bootstrapDefaultProfile()
+    expect(profile.arithEnabled).toBe(true)
+    expect(profile.divisionEnabled).toBe(divisionEnabled ?? true)
+    const checkDb = await openDb()
+    try {
+      expect(await getProfile(checkDb, 'anicka')).toEqual(profile)
+    } finally {
+      checkDb.close()
+    }
+  })
+
+  it('preserves explicitly disabled arithmetic across boots', async () => {
+    const { profile } = await bootstrapDefaultProfile()
+    const db = await openDb()
+    await putProfile(db, { ...profile, arithEnabled: false })
+    db.close()
+    expect((await bootstrapDefaultProfile()).profile.arithEnabled).toBe(false)
   })
 })

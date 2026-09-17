@@ -21,11 +21,16 @@ export async function bootstrapDefaultProfile(): Promise<{ profile: Profile; car
       unlockedTables: [1, 2, 5, 10],
       selectedScene: 'bee',
       divisionEnabled: true,
+      arithEnabled: true,
     }
     await putProfile(db, profile)
     isNewProfile = true
-  } else if (profile.divisionEnabled === undefined) {
-    profile = { ...profile, divisionEnabled: true }
+  } else if (profile.divisionEnabled === undefined || profile.arithEnabled === undefined) {
+    profile = {
+      ...profile,
+      divisionEnabled: profile.divisionEnabled ?? true,
+      arithEnabled: profile.arithEnabled ?? true,
+    }
     await putProfile(db, profile)
   }
 

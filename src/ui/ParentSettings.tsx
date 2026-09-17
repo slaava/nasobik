@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import type { Card, Session } from '../core/types'
 import { todayStats, weekStats } from '../core/stats'
+import { formatQuestion, isArithOp } from '../core/cards'
 import { Heatmap } from './Heatmap'
 
 type Props = {
   name: string
   unlockedTables: number[]
   divisionEnabled: boolean
+  arithEnabled: boolean
+  onToggleArith: () => void
   cards: Card[]
   sessions: Session[]
   onRename: (newName: string) => void
@@ -19,6 +22,8 @@ export function ParentSettings({
   name,
   unlockedTables,
   divisionEnabled,
+  arithEnabled,
+  onToggleArith,
   cards,
   sessions,
   onRename,
@@ -27,9 +32,13 @@ export function ParentSettings({
   onBack,
 }: Props) {
   const [nameDraft, setNameDraft] = useState(name)
+  // Keep the editable draft synchronized with the persisted name supplied by App.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setNameDraft(name), [name])
 
   const unlocked = new Set(unlockedTables)
+  const arithCards = cards.filter(c => isArithOp(c.op))
+    .sort((a, b) => a.box - b.box || a.id.localeCompare(b.id))
   const today = todayStats(sessions)
   const week = weekStats(sessions)
 
@@ -98,19 +107,33 @@ export function ParentSettings({
 
       <section>
         <h2 className="text-xl font-semibold text-amber-900 mb-1">Operace</h2>
-        <label className="inline-flex items-center gap-3 rounded-2xl bg-white shadow px-4 py-3 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={divisionEnabled}
-            onChange={onToggleDivision}
-            className="w-5 h-5"
-          />
-          <span className="text-lg text-amber-900">Procvičovat i dělení</span>
-        </label>
-        <p className="text-xs text-amber-600 mt-2 max-w-md">
-          Ke každému příkladu typu <span className="tabular-nums">6 × 7</span> přidá i opačný{' '}
-          <span className="tabular-nums">42 ÷ 6</span>. Pokrok pro každý směr je samostatný.
-        </p>
+        <div className="flex flex-col gap-3 items-start">
+          <label className="inline-flex items-center gap-3 rounded-2xl bg-white shadow px-4 py-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={divisionEnabled}
+              onChange={onToggleDivision}
+              className="w-5 h-5"
+            />
+            <span className="text-lg text-amber-900">Procvičovat i dělení</span>
+          </label>
+          <p className="text-xs text-amber-600 mt-2 max-w-md">
+            Ke každému příkladu typu <span className="tabular-nums">6 × 7</span> přidá i opačný{' '}
+            <span className="tabular-nums">42 ÷ 6</span>. Pokrok pro každý směr je samostatný.
+          </p>
+          <label className="inline-flex items-center gap-3 rounded-2xl bg-white shadow px-4 py-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={arithEnabled}
+              onChange={onToggleArith}
+              className="w-5 h-5"
+            />
+            <span className="text-lg text-amber-900">Sčítání a odčítání do 100</span>
+          </label>
+          <p className="text-xs text-amber-600 mt-2 max-w-md">
+            Přidá na úvodní obrazovku druhou hru. Příklady jsou náhodné do 100, chybné se vrací, dokud je dítě neumí.
+          </p>
+        </div>
       </section>
 
       <section>
@@ -127,6 +150,28 @@ export function ParentSettings({
           <Legend label="automaticky" className="bg-green-600" />
           <Legend label="zamčená řada" className="bg-gray-200" />
         </div>
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold text-amber-900 mb-1">Sčítání a odčítání: kde chybuje</h2>
+        <p className="text-sm text-amber-700 mb-3">
+          Příklady, které dítě spletlo a ještě se k nim vracíme.
+        </p>
+        {arithCards.length ? (
+          <div className="flex flex-wrap gap-2">
+            {arithCards.map(card => (
+              <span
+                key={card.id}
+                className="rounded-xl bg-white shadow px-3 py-1.5 text-amber-900 tabular-nums"
+                title={`viděno ${card.totalSeen}× · správně ${card.totalCorrect}×`}
+              >
+                {formatQuestion(card)}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-amber-700">Zatím žádné rozpracované chyby.</p>
+        )}
       </section>
 
       <section>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyAnswer, bumpExposure, pickNext } from './leitner'
+import { applyAnswer, bumpExposure, pickNext, pickReady } from './leitner'
 import type { Card } from './types'
 
 const baseCard = (overrides: Partial<Card> = {}): Card => ({
@@ -136,5 +136,25 @@ describe('pickNext', () => {
       baseCard({ id: 'c', box: 1, exposuresSinceLastSeen: 0 }),
     ]
     expect(pickNext(cards, { blockingTable: null })?.id).toBe('c')
+  })
+})
+
+describe('pickReady', () => {
+  it('never falls back when no card meets both thresholds', () => {
+    expect(pickReady([])).toBeNull()
+    expect(pickReady([baseCard({ exposuresSinceLastSeen: 0 })])).toBeNull()
+    expect(pickReady([baseCard({ box: 3, sessionsSinceLastSeen: 0 })])).toBeNull()
+  })
+
+  it('returns the ready card and uses box/exposure priority with stable ties', () => {
+    const waiting = baseCard({ id: 'waiting', exposuresSinceLastSeen: 0 })
+    const ready = baseCard({ id: 'ready', exposuresSinceLastSeen: 3 })
+    expect(pickReady([waiting, ready])).toBe(ready)
+    const older = baseCard({ id: 'older', exposuresSinceLastSeen: 4 })
+    const higherBox = baseCard({ id: 'higher', box: 2, exposuresSinceLastSeen: 20 })
+    const tied = { ...older, id: 'tied' }
+    const cards = [higherBox, ready, older, tied]
+    expect(pickReady(cards)).toBe(older)
+    expect(cards).toEqual([higherBox, ready, older, tied])
   })
 })

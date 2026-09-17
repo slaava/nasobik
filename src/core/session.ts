@@ -1,6 +1,8 @@
-import type { Card, AnswerEvent } from './types'
-import { applyAnswer, bumpExposure, pickNext } from './leitner'
-import { expectedAnswer } from './cards'
+import type { Card, AnswerEvent, GameMode } from './types'
+import { applyAnswer, bumpExposure, pickNext, pickReady } from './leitner'
+import { expectedAnswer, generateArithCard } from './cards'
+
+export const ARITH_RETIRE_BOX = 3
 
 export type SessionPhase = 'idle' | 'asking' | 'showing-correction' | 'finished'
 
@@ -13,10 +15,14 @@ export type SessionState = {
   blockingTable: number | null
   answers: AnswerEvent[]
   hardCap: number
+  mode: GameMode
+  profileId: string
+  retiredIds: string[]
+  rng: () => number
 }
 
 export type SessionAction =
-  | { type: 'START'; cards: Card[]; goalCount: number; blockingTable: number | null }
+  | { type: 'START'; cards: Card[]; goalCount: number; blockingTable: number | null; mode?: GameMode; profileId?: string; rng?: () => number }
   | { type: 'SUBMIT_ANSWER'; value: number; rt: number }
   | { type: 'CONFIRM_CORRECTION'; value: number }
   | { type: 'END' }
@@ -31,6 +37,10 @@ export function initSessionState(): SessionState {
     blockingTable: null,
     answers: [],
     hardCap: 35,
+    mode: 'tables',
+    profileId: '',
+    retiredIds: [],
+    rng: Math.random,
   }
 }
 
@@ -57,7 +67,17 @@ function shuffle<T>(arr: readonly T[]): T[] {
   return a
 }
 
+function freshArithCard(state: SessionState): Card {
+  let card: Card
+  for (let attempt = 0; attempt < 20; attempt++) {
+    card = generateArithCard(state.profileId, state.rng)
+    if (!state.cards.some(c => c.id === card.id)) return card
+  }
+  return card!
+}
+
 function pickNextWithFinale(state: SessionState): Card | null {
+  if (state.mode === 'arith') return pickReady(state.cards) ?? freshArithCard(state)
   const remainingForGoal = state.goalCount - state.correctCount
   if (remainingForGoal === 1) {
     const finale = pickNext(
@@ -82,24 +102,31 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         ...c,
         sessionsSinceLastSeen: c.sessionsSinceLastSeen + 1,
       }))
-      const shuffled = shuffle(advanced)
+      const shuffled = action.mode === 'arith' ? advanced : shuffle(advanced)
       const next: SessionState = {
         ...initSessionState(),
         phase: 'asking',
         cards: shuffled,
+        mode: action.mode ?? 'tables',
+        profileId: action.cards[0]?.profileId ?? action.profileId ?? '',
+        rng: action.rng ?? Math.random,
         goalCount: action.goalCount,
         blockingTable: action.blockingTable,
       }
-      const first = pickNext(shuffled, { blockingTable: action.blockingTable })
+      const first = next.mode === 'arith'
+        ? pickNextWithFinale(next)
+        : pickNext(shuffled, { blockingTable: action.blockingTable })
       return { ...next, currentCard: first }
     }
 
     case 'SUBMIT_ANSWER': {
       if (state.phase !== 'asking' || !state.currentCard) return state
-      const card = state.currentCard
+      const card = state.mode === 'arith'
+        ? state.cards.find(c => c.id === state.currentCard!.id) ?? state.currentCard
+        : state.currentCard
       const expected = expectedAnswer(card)
       const correct = action.value === expected
-      const event: AnswerEvent = { a: card.a, b: card.b, correct, rt: action.rt }
+      const event: AnswerEvent = { a: card.a, b: card.b, correct, rt: action.rt, op: card.op }
 
       if (!correct) {
         return {
@@ -111,7 +138,12 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
 
       const updated = applyAnswer(card, { correct: true, rt: action.rt })
       const bumped = bumpAllExcept(state.cards, card.id)
-      const newCards = replaceCard(bumped, updated)
+      const retire = state.mode === 'arith' &&
+        state.cards.some(c => c.id === card.id) && updated.box >= ARITH_RETIRE_BOX
+      const newCards = retire
+        ? bumped.filter(c => c.id !== card.id)
+        : replaceCard(bumped, updated)
+      const retiredIds = retire ? [...state.retiredIds, card.id] : state.retiredIds
       const correctCount = state.correctCount + 1
       const answers = [...state.answers, event]
 
@@ -119,7 +151,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       const reachedCap = answers.length >= state.hardCap
 
       if (reachedGoal || reachedCap) {
-        return { ...state, cards: newCards, currentCard: null, correctCount, answers, phase: 'finished' }
+        return { ...state, cards: newCards, retiredIds, currentCard: null, correctCount, answers, phase: 'finished' }
       }
 
       const nextStateForPick: SessionState = { ...state, cards: newCards, correctCount }
@@ -127,6 +159,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       return {
         ...state,
         cards: newCards,
+        retiredIds,
         currentCard: nextCard,
         correctCount,
         answers,
@@ -136,17 +169,23 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
 
     case 'CONFIRM_CORRECTION': {
       if (state.phase !== 'showing-correction' || !state.currentCard) return state
-      const card = state.currentCard
+      const card = state.mode === 'arith'
+        ? state.cards.find(c => c.id === state.currentCard!.id) ?? state.currentCard
+        : state.currentCard
       const expected = expectedAnswer(card)
       if (action.value !== expected) return state
 
       const updated = applyAnswer(card, { correct: false, rt: 0 })
       const bumped = bumpAllExcept(state.cards, card.id)
-      const newCards = replaceCard(bumped, updated)
+      const newCards = state.mode === 'arith' && !bumped.some(c => c.id === card.id)
+        ? [...bumped, updated]
+        : replaceCard(bumped, updated)
+      // A mastered problem may be generated and missed again in this session.
+      const retiredIds = state.retiredIds.filter(id => id !== card.id)
       const reachedCap = state.answers.length >= state.hardCap
 
       if (reachedCap) {
-        return { ...state, cards: newCards, currentCard: null, phase: 'finished' }
+        return { ...state, cards: newCards, retiredIds, currentCard: null, phase: 'finished' }
       }
 
       const nextStateForPick: SessionState = { ...state, cards: newCards }
@@ -154,6 +193,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       return {
         ...state,
         cards: newCards,
+        retiredIds,
         currentCard: nextCard,
         phase: nextCard ? 'asking' : 'finished',
       }

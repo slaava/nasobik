@@ -28,3 +28,6 @@ scratch/
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright MCP screenshots/snapshots from manual click-through
+.playwright-mcp/

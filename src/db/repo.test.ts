@@ -4,11 +4,12 @@ import {
   putProfile,
   getProfile,
   putCards,
+  deleteCards,
   getCardsForProfile,
   putSession,
   syncCardsToUnlockedTables,
 } from './repo'
-import { generateCardsForTables } from '../core/cards'
+import { generateCardsForTables, generateArithCard } from '../core/cards'
 
 beforeEach(async () => {
   indexedDB.deleteDatabase('nasobik')
@@ -25,6 +26,7 @@ describe('repo', () => {
       unlockedTables: [1, 2],
       selectedScene: 'bee',
       divisionEnabled: false,
+      arithEnabled: true,
     })
     const got = await getProfile(db, 'p1')
     expect(got?.name).toBe('Anička')
@@ -130,5 +132,43 @@ describe('syncCardsToUnlockedTables', () => {
     expect(preserved.box).toBe(4)
     expect(preserved.totalCorrect).toBe(12)
     db.close()
+  })
+})
+
+describe('arithmetic persistence', () => {
+  it('preserves add/sub mistakes when tables change and division is disabled', async () => {
+    const db = await openDb()
+    try {
+      const mistakes = [
+        { ...generateArithCard('p1', () => 0), totalSeen: 3 },
+        { ...generateArithCard('p1', () => 0.9), box: 2 as const, totalCorrect: 1 },
+      ]
+      await putCards(db, [...generateCardsForTables('p1', [2], true), ...mistakes])
+      await syncCardsToUnlockedTables(db, 'p1', [3], true)
+      for (const card of mistakes) expect(await db.get('cards', card.id)).toEqual(card)
+      await syncCardsToUnlockedTables(db, 'p1', [3], false)
+      for (const card of mistakes) expect(await db.get('cards', card.id)).toEqual(card)
+      expect((await getCardsForProfile(db, 'p1')).filter(c => c.op === 'div')).toEqual([])
+    } finally {
+      db.close()
+    }
+  })
+
+  it('deleteCards removes exactly the supplied ids, including mastered mistakes', async () => {
+    const db = await openDb()
+    try {
+      const add = generateArithCard('p1', () => 0)
+      const sub = generateArithCard('p1', () => 0.9)
+      const otherProfile = generateArithCard('p2', () => 0)
+      await putCards(db, [add, sub, otherProfile])
+      await deleteCards(db, [])
+      expect(await db.count('cards')).toBe(3)
+      await deleteCards(db, [add.id, 'missing'])
+      expect(await db.get('cards', add.id)).toBeUndefined()
+      expect(await db.get('cards', sub.id)).toEqual(sub)
+      expect(await db.get('cards', otherProfile.id)).toEqual(otherProfile)
+    } finally {
+      db.close()
+    }
   })
 })

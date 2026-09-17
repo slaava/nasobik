@@ -1,12 +1,15 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { generateArithCard, formatQuestion } from '../core/cards'
 import { ParentSettings } from './ParentSettings'
 
 const baseProps = {
   name: 'Anička',
   unlockedTables: [1, 2, 5],
   divisionEnabled: false,
+  arithEnabled: true,
+  onToggleArith: () => {},
   cards: [],
   sessions: [],
   onRename: () => {},
@@ -61,5 +64,31 @@ describe('ParentSettings', () => {
     render(<ParentSettings {...baseProps} onBack={onBack} />)
     await userEvent.click(screen.getByRole('button', { name: /zpět/i }))
     expect(onBack).toHaveBeenCalled()
+  })
+})
+
+describe('arithmetic settings', () => {
+  it.each([true, false])('reflects arithEnabled=%s and invokes the toggle', async arithEnabled => {
+    const onToggleArith = vi.fn()
+    render(<ParentSettings {...baseProps} arithEnabled={arithEnabled} onToggleArith={onToggleArith} />)
+    const checkbox = screen.getByRole('checkbox', { name: 'Sčítání a odčítání do 100' })
+    expect((checkbox as HTMLInputElement).checked).toBe(arithEnabled)
+    await userEvent.click(checkbox)
+    expect(onToggleArith).toHaveBeenCalledTimes(1)
+  })
+
+  it('lists open mistakes sorted by box then id with progress tooltips', () => {
+    const add = { ...generateArithCard('p1', () => 0), box: 2 as const, totalSeen: 3, totalCorrect: 1 }
+    const sub = generateArithCard('p1', () => 0.9)
+    render(<ParentSettings {...baseProps} cards={[add, sub]} />)
+    const heading = screen.getByRole('heading', { name: 'Sčítání a odčítání: kde chybuje' })
+    const chips = heading.closest('section')!.querySelectorAll('span')
+    expect([...chips].map(chip => chip.textContent)).toEqual([formatQuestion(sub), formatQuestion(add)])
+    expect(screen.getByText(formatQuestion(add))).toHaveAttribute('title', 'viděno 3× · správně 1×')
+  })
+
+  it('shows the empty mistakes message', () => {
+    render(<ParentSettings {...baseProps} />)
+    expect(screen.getByText('Zatím žádné rozpracované chyby.')).toBeInTheDocument()
   })
 })

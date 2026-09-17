@@ -19,12 +19,13 @@ type Props = {
 // hasn't really "got" a fact until both directions are fluent. The tooltip
 // breaks down the per-op state. Locked rows stay grey.
 export function Heatmap({ cards }: Props) {
+  cards = cards.filter(c => c.op === 'mul' || c.op === 'div')
   type CellState = { mul?: Card; div?: Card }
   const byKey = new Map<string, CellState>()
   for (const c of cards) {
     const key = `${c.a}-${c.b}`
     const entry = byKey.get(key) ?? {}
-    entry[c.op] = c
+    if (c.op === 'mul' || c.op === 'div') entry[c.op] = c
     byKey.set(key, entry)
   }
 

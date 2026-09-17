@@ -89,3 +89,9 @@ export function pickNext(cards: Card[], ctx: PickContext): Card | null {
 
   return sorted[0] ?? null
 }
+
+export function pickReady(cards: Card[]): Card | null {
+  return cards.filter(isReady).sort((a, b) =>
+    a.box - b.box || b.exposuresSinceLastSeen - a.exposuresSinceLastSeen,
+  )[0] ?? null
+}

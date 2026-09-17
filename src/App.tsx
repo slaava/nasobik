@@ -4,12 +4,14 @@ import {
   openDb,
   putProfile,
   putCards,
+  deleteCards,
   putSession,
   getCardsForProfile,
   getSessionsForProfile,
   syncCardsToUnlockedTables,
 } from './db/repo'
-import type { Card, Profile, Session } from './core/types'
+import type { Card, Profile, Session, GameMode } from './core/types'
+import { opsForMode } from './core/cards'
 import type { SessionState } from './core/session'
 import { SessionScreen } from './ui/SessionScreen'
 import { SessionSummary } from './ui/SessionSummary'
@@ -33,6 +35,7 @@ function makeSessionId(): string {
 }
 
 export default function App() {
+  const [mode, setMode] = useState<GameMode>('tables')
   const [phase, setPhase] = useState<Phase>('loading')
   const [profile, setProfile] = useState<Profile | null>(null)
   const [cards, setCards] = useState<Card[]>([])
@@ -56,7 +59,10 @@ export default function App() {
     if (!profile) return
     const wrongCount = state.answers.filter(a => !a.correct).length
     setLastSummary({ correct: state.correctCount, wrong: wrongCount })
-    setCards(state.cards)
+    // The session deck only held this mode's cards; keep the other mode's
+    // cards and replace ours (retired arith cards are simply absent).
+    const modeOps = opsForMode(mode)
+    setCards(prev => [...prev.filter(c => !modeOps.includes(c.op)), ...state.cards])
     const totalMs = state.answers.reduce((sum, a) => sum + a.rt, 0)
     const endedAt = Date.now()
     const newSession: Session = {
@@ -68,6 +74,7 @@ export default function App() {
     }
     const db = await openDb()
     await putCards(db, state.cards)
+    if (state.retiredIds.length) await deleteCards(db, state.retiredIds)
     await putSession(db, newSession)
     db.close()
     setSessions(prev => [...prev, newSession])
@@ -106,6 +113,15 @@ export default function App() {
     setCards(freshCards)
   }
 
+  const onToggleArith = async () => {
+    if (!profile) return
+    const updated = { ...profile, arithEnabled: !profile.arithEnabled }
+    const db = await openDb()
+    await putProfile(db, updated)
+    db.close()
+    setProfile(updated)
+  }
+
   const onRename = async (newName: string) => {
     if (!profile) return
     const updated = { ...profile, name: newName }
@@ -121,7 +137,7 @@ export default function App() {
 
   if (phase === 'home') {
     return (
-      <div className="relative flex flex-col h-full items-center justify-center bg-amber-50 gap-6 p-8">
+      <div className="relative flex flex-col h-full items-center justify-center bg-amber-50 gap-3 p-4 [@media(min-height:760px)]:gap-6 [@media(min-height:760px)]:p-8">
         <button
           type="button"
           onClick={() => setPhase('parent-gate')}
@@ -130,16 +146,41 @@ export default function App() {
         >
           ⚙️
         </button>
-        <img src={beeIdleUrl} alt="" className="h-[40vh] w-auto select-none" draggable={false} />
+        <img src={beeIdleUrl} alt="" className="h-[24dvh] [@media(min-height:760px)]:h-[32dvh] w-auto select-none" draggable={false} />
         <h1 className="text-4xl font-bold text-amber-900">Ahoj, {profile.name}!</h1>
         <p className="text-xl text-amber-800">Pojďme nakrmit včelku.</p>
-        <button
-          type="button"
-          onClick={() => setPhase('playing')}
-          className="rounded-2xl bg-amber-500 text-white py-4 px-8 text-2xl font-bold shadow active:scale-95"
-        >
-          HRÁT
-        </button>
+        {profile.arithEnabled ? (
+          <div className="flex flex-col gap-3">
+            {([
+              { mode: 'tables', glyph: '× ÷', label: 'Násobení' },
+              { mode: 'arith', glyph: '+ −', label: 'Sčítání a odčítání' },
+            ] as const).map(game => (
+              <button
+                key={game.mode}
+                type="button"
+                onClick={() => {
+                  setMode(game.mode)
+                  setPhase('playing')
+                }}
+                className="rounded-2xl bg-amber-500 text-white py-3 px-8 font-bold shadow active:scale-95"
+              >
+                <span className="block text-3xl">{game.glyph}</span>
+                <span className="block text-lg">{game.label}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setMode('tables')
+              setPhase('playing')
+            }}
+            className="rounded-2xl bg-amber-500 text-white py-4 px-8 text-2xl font-bold shadow active:scale-95"
+          >
+            HRÁT
+          </button>
+        )}
       </div>
     )
   }
@@ -159,6 +200,8 @@ export default function App() {
         name={profile.name}
         unlockedTables={profile.unlockedTables}
         divisionEnabled={profile.divisionEnabled}
+        arithEnabled={profile.arithEnabled}
+        onToggleArith={onToggleArith}
         cards={cards}
         sessions={sessions}
         onRename={onRename}
@@ -172,7 +215,9 @@ export default function App() {
   if (phase === 'playing') {
     return (
       <SessionScreen
-        cards={cards}
+        cards={cards.filter(c => opsForMode(mode).includes(c.op))}
+        mode={mode}
+        profileId={profile.id}
         goalCount={beeScene.goalCount}
         scene={beeScene}
         onFinish={onFinish}

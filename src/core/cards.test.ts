@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { generateCardsForTables, expectedAnswer, formatQuestion, cardId } from './cards'
+import { generateCardsForTables, generateArithCard, isArithOp, opsForMode, expectedAnswer, formatQuestion, cardId } from './cards'
 import type { Card } from './types'
 
 const mk = (overrides: Partial<Card>): Card => ({
@@ -82,5 +82,54 @@ describe('cardId', () => {
   it('uses :div suffix for division', () => {
     expect(cardId('p1', 'mul', 4, 9)).toBe('p1:4x9')
     expect(cardId('p1', 'div', 4, 9)).toBe('p1:4x9:div')
+  })
+})
+
+describe('arithmetic cards', () => {
+  it('generates add/sub problems within the range over 500 random draws', () => {
+    const ops = new Set<string>()
+    for (let i = 0; i < 500; i++) {
+      const card = generateArithCard('p1')
+      ops.add(card.op)
+      expect(isArithOp(card.op)).toBe(true)
+      expect(Number.isInteger(card.a)).toBe(true)
+      expect(Number.isInteger(card.b)).toBe(true)
+      expect(card.b).toBeGreaterThanOrEqual(1)
+      if (card.op === 'add') {
+        expect(card.a).toBeGreaterThanOrEqual(1)
+        expect(card.a).toBeLessThanOrEqual(99)
+        expect(card.b).toBeLessThanOrEqual(100 - card.a)
+      } else {
+        expect(card.a).toBeGreaterThanOrEqual(2)
+        expect(card.a).toBeLessThanOrEqual(100)
+        expect(card.b).toBeLessThanOrEqual(card.a - 1)
+      }
+    }
+    expect([...ops].sort()).toEqual(['add', 'sub'])
+  })
+
+  it('uses the injected rng for all three draws and starts fresh', () => {
+    const values = [0.2, 0.47, 0.65]
+    let i = 0
+    const card = generateArithCard('p1', () => values[i++]!)
+    expect(i).toBe(3)
+    expect(card).toEqual(mk({ id: 'p1:47+35', op: 'add', a: 47, b: 35 }))
+  })
+
+  it.each([
+    ['add', 47, 35, '47 + 35', 82, 'p1:47+35'],
+    ['sub', 82, 47, '82 − 47', 35, 'p1:82-47'],
+  ] as const)('formats, answers and identifies %s', (op, a, b, question, answer, id) => {
+    const card = mk({ op, a, b })
+    expect(formatQuestion(card)).toBe(question)
+    expect(expectedAnswer(card)).toBe(answer)
+    expect(cardId('p1', op, a, b)).toBe(id)
+  })
+
+  it('separates the operations by game mode', () => {
+    expect(opsForMode('tables')).toEqual(['mul', 'div'])
+    expect(opsForMode('arith')).toEqual(['add', 'sub'])
+    expect(isArithOp('mul')).toBe(false)
+    expect(isArithOp('div')).toBe(false)
   })
 })

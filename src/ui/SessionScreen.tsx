@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
 import { sessionReducer, initSessionState } from '../core/session'
 import type { SessionState } from '../core/session'
-import type { Card } from '../core/types'
+import type { Card, GameMode } from '../core/types'
 import { expectedAnswer, formatQuestion } from '../core/cards'
 import type { Scene } from '../scenes/types'
 import { Numpad } from './Numpad'
@@ -10,13 +10,15 @@ type Props = {
   cards: Card[]
   goalCount: number
   scene: Scene
+  mode: GameMode
+  profileId?: string
   onFinish: (state: SessionState) => void
 }
 
-export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
+export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFinish }: Props) {
   const [state, dispatch] = useReducer(sessionReducer, initSessionState())
   const [input, setInput] = useState('')
-  const askedAtRef = useRef<number>(Date.now())
+  const askedAtRef = useRef<number>(0)
 
   // START fires exactly once per mount. App passes fresh cards on each remount
   // (after the summary screen is dismissed), so we don't need a dep array that
@@ -25,13 +27,15 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
   // which changed the cards reference and re-dispatched START before the
   // phase flip unmounted us — running a second session in place.
   useEffect(() => {
-    dispatch({ type: 'START', cards, goalCount, blockingTable: null })
+    dispatch({ type: 'START', cards, goalCount, blockingTable: null, mode, profileId })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     if (state.phase === 'asking') {
       askedAtRef.current = Date.now()
+      // Clear the input when the reducer advances to a question (including correction).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setInput('')
     }
   }, [state.currentCard?.id, state.phase])
@@ -95,6 +99,7 @@ export function SessionScreen({ cards, goalCount, scene, onFinish }: Props) {
     return <div className="h-dvh bg-amber-50" />
   }
   if (!card) {
+    if (mode === 'arith') return <div className="h-dvh bg-amber-50" />
     return (
       <div className="flex flex-col h-dvh items-center justify-center gap-4 bg-amber-50 p-8 text-center">
         <p className="text-xl text-amber-900">Není co procvičovat.</p>

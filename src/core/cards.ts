@@ -1,14 +1,20 @@
-import type { Card, CardOp } from './types'
+import type { Card, CardOp, GameMode } from './types'
 
 export function cardId(profileId: string, op: CardOp, a: number, b: number): string {
+  if (op === 'add') return `${profileId}:${a}+${b}`
+  if (op === 'sub') return `${profileId}:${a}-${b}`
   return op === 'mul' ? `${profileId}:${a}x${b}` : `${profileId}:${a}x${b}:div`
 }
 
 export function expectedAnswer(card: Card): number {
+  if (card.op === 'add') return card.a + card.b
+  if (card.op === 'sub') return card.a - card.b
   return card.op === 'div' ? card.b : card.a * card.b
 }
 
 export function formatQuestion(card: Card): string {
+  if (card.op === 'add') return `${card.a} + ${card.b}`
+  if (card.op === 'sub') return `${card.a} − ${card.b}`
   return card.op === 'div' ? `${card.a * card.b} ÷ ${card.a}` : `${card.a} × ${card.b}`
 }
 
@@ -41,4 +47,22 @@ export function generateCardsForTables(
     }
   }
   return cards
+}
+
+export const ARITH_OPS: readonly CardOp[] = ['add', 'sub']
+export const TABLE_OPS: readonly CardOp[] = ['mul', 'div']
+
+export function isArithOp(op: CardOp): boolean {
+  return ARITH_OPS.includes(op)
+}
+
+export function opsForMode(mode: GameMode): readonly CardOp[] {
+  return mode === 'arith' ? ARITH_OPS : TABLE_OPS
+}
+
+export function generateArithCard(profileId: string, rng: () => number = Math.random): Card {
+  const op = rng() < 0.5 ? 'add' : 'sub'
+  const a = Math.floor(rng() * 99) + (op === 'add' ? 1 : 2)
+  const b = Math.floor(rng() * (op === 'add' ? 100 - a : a - 1)) + 1
+  return freshCard(profileId, op, a, b)
 }

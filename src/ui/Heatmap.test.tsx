@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render } from '@testing-library/react'
 import { Heatmap } from './Heatmap'
-import { generateCardsForTables } from '../core/cards'
+import { generateCardsForTables, generateArithCard } from '../core/cards'
 
 describe('Heatmap', () => {
   it('renders 100 cells', () => {
@@ -25,4 +25,16 @@ describe('Heatmap', () => {
     const { container } = render(<Heatmap cards={cards} />)
     expect(container.querySelectorAll('[data-cell][data-box="2"]').length).toBeGreaterThanOrEqual(1)
   })
+})
+
+it('ignores arithmetic cards even when their operands match table cells', () => {
+  const { container } = render(<Heatmap cards={[
+    generateArithCard('p1', () => 0),
+    generateArithCard('p1', (() => {
+      const values = [0.9, 0, 0]
+      let i = 0
+      return () => values[i++ % values.length]!
+    })()),
+  ]} />)
+  expect(container.querySelectorAll('[data-cell][data-box="0"]')).toHaveLength(100)
 })
