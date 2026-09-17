@@ -31,3 +31,4 @@ scratch/
 
 # Playwright MCP screenshots/snapshots from manual click-through
 .playwright-mcp/
+.superpowers/
