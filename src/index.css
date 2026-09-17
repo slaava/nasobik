@@ -2,9 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root {
-  height: 100%;
+html, body, #root { height: 100%; }
+
+/* Design tokens. Colour render = mint. Shape and text carry every state; colour is additive. */
+:root {
+  --paper: #f2f8f4;
+  --ink: #1f3a34;
+  --card: #ffffff;
+  --accent: #2f9e78;
+  --accent-fg: #ffffff;
+  --muted: #cfe3da;
+  --fur: #d9d5cf;
+  --nose: #e07a8c;
 }
+
+/* E-ink render (html[data-theme="eink"], toggled by src/eink.ts): 1-bit safe, no motion. */
+[data-theme="eink"] {
+  --paper: #ffffff;
+  --ink: #000000;
+  --card: #ffffff;
+  --accent: #000000;
+  --accent-fg: #ffffff;
+  --muted: #000000;
+  --fur: #ffffff;
+  --nose: #000000;
+}
+[data-theme="eink"] *,
+[data-theme="eink"] *::before,
+[data-theme="eink"] *::after {
+  transition: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+}
+[data-theme="eink"] .active\:scale-95:active { transform: none; }
+[data-theme="eink"] img { filter: grayscale(1) contrast(1.15); }
 
 /* ---------------------------------------------------------------------------
    E-ink mode (html[data-theme="eink"], see src/eink.ts)
