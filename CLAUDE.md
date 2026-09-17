@@ -38,10 +38,12 @@ The app is a small state machine over a Leitner spaced-repetition core. Layers, 
   - `clock.ts` — clock game domain: levels → cards, phrases (`půl osmé` = 7:30), `inputModeFor` (choice below Box 3, keypad above), `choiceOptionsFor` with the next-hour trap distractor, `isCorrectAnswer` (analog accepts both 12h readings). Answer encoding is `hours*100+minutes`.
   - `stats.ts` — `todayStats` / `weekStats` for the parent panel.
 - **`src/db/`** — `idb` wrappers. `schema.ts` defines object stores `profiles`, `cards`, `sessions` with a `by-profile` index. `syncCardsForProfile` is insert-only: the DB keeps every card ever generated; `isCardActive(card, profile)` decides what enters a session deck / gets coloured. Toggling a table or clock level off never deletes progress.
-- **`src/scenes/`** — pluggable "scene" abstraction (`Scene` = `{ Hero, Container, goalCount, ... }`). Only `bee` exists today; `App.tsx` wires it in directly. The Hero/Container components receive `SceneCtx` (`correctCount`, `wrongCount`, `goalCount`, `lastEvent`) and own their own animation.
-- **`src/ui/`** — screen components. The bee animates via `framer-motion`'s `useAnimationControls` with explicit chain-back-to-idle, because Framer doesn't re-trigger an animation when the prop value is unchanged across same-result answers.
+- **`src/scenes/`** — pluggable scene abstraction (`Scene` = `{ Hero, Container, goalCount, ... }`). Only `cat` exists; `App.tsx` wires it in directly. Hero renders a static SVG cat head and a deterministic Czech speech bubble; Container renders session progress dots. `SceneCtx` supplies `correctCount`, `wrongCount`, `goalCount`, `lastEvent` (`idle | correct | wrong | dunno`), `streak`, and `phraseSeed` (answer count). There is no animation library.
+- **`src/ui/`** — screen components use semantic Tailwind colours mapped to CSS custom properties in `src/index.css`. Shape and text carry state; colour is additive. `src/eink.ts` switches the tokens through `html[data-theme="eink"]`, using `?eink=1`, localStorage, or the parent-settings checkbox. `src/compat.test.ts` enforces old-WebKit rules: vh fallbacks for dvh, margins instead of flex gap, and no aspect/inset utilities, `:has()`, `color-mix()`, or container queries.
 
 ## Behaviours that bite
+
+- **No `dvh` without a vh fallback, no flex `gap`: Kindle WebKit.**
 
 - **`SessionScreen` calls `onFinish` exactly once.** It uses a `useRef` guard and depends only on `state.phase`. Adding `state` or `onFinish` to the dep array causes the session to be persisted twice (App re-renders → new closure → effect re-fires before phase flips to `summary`) and stats double-count. If you touch the effect, re-read the comment above the `finishedFiredRef`.
 - **Heatmap must filter to active mul/div.** Arith cards share the `a`/`b` fields; an `add` card `3+7` would otherwise collide with the `3×7` cell.
