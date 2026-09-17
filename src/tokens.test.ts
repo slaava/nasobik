@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // src/tokens.test.ts
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
