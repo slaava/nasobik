@@ -168,7 +168,7 @@ describe('clock cards and active decks', () => {
 
   it('generates required cards and filters every operation by settings', () => {
     const p: Profile = {
-      id: 'p', name: 'Ema', avatar: '🐝', createdAt: 1, selectedScene: 'bee',
+      id: 'p', name: 'Ema', avatar: '🐝', createdAt: 1, selectedScene: 'cat',
       unlockedTables: [2], divisionEnabled: true, arithEnabled: true,
       clockEnabled: true, clockLevels: ['hours', 'half'],
     }

@@ -26,7 +26,7 @@ describe('repo', () => {
       avatar: '🐝',
       createdAt: 1000,
       unlockedTables: [1, 2],
-      selectedScene: 'bee',
+      selectedScene: 'cat',
       divisionEnabled: false,
       arithEnabled: true,
       clockEnabled: true,
@@ -179,7 +179,7 @@ describe('arithmetic persistence', () => {
 
 function profile(unlockedTables: number[], divisionEnabled: boolean): Profile {
   return {
-    id: 'p1', name: 'Ema', avatar: '🐝', createdAt: 1, selectedScene: 'bee',
+    id: 'p1', name: 'Ema', avatar: '🐝', createdAt: 1, selectedScene: 'cat',
     unlockedTables, divisionEnabled, arithEnabled: true, clockEnabled: true, clockLevels: [],
   }
 }

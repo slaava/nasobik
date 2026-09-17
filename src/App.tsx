@@ -17,8 +17,8 @@ import { SessionScreen } from './ui/SessionScreen'
 import { SessionSummary } from './ui/SessionSummary'
 import { ParentGate } from './ui/ParentGate'
 import { ParentSettings } from './ui/ParentSettings'
-import { beeScene } from './scenes/bee'
-import beeIdleUrl from './scenes/bee/assets/bee-idle.svg'
+import { catScene } from './scenes/cat'
+import { HomeScreen } from './ui/HomeScreen'
 
 type Phase = 'loading' | 'home' | 'playing' | 'summary' | 'parent-gate' | 'parent-settings'
 
@@ -156,59 +156,18 @@ export default function App() {
   }
 
   if (phase === 'loading' || !profile) {
-    return <div className="flex h-full items-center justify-center bg-amber-50 text-amber-900">Načítám…</div>
+    return <div className="flex h-full items-center justify-center bg-paper text-ink">Načítám…</div>
   }
-
-  const games = [
-    { mode: 'tables' as const, glyph: '× ÷', label: 'Násobení' },
-    ...(profile.arithEnabled ? [{ mode: 'arith' as const, glyph: '+ −', label: 'Sčítání a odčítání' }] : []),
-    ...(profile.clockEnabled ? [{ mode: 'clock' as const, glyph: '🕒', label: 'Hodiny' }] : []),
-  ]
 
   if (phase === 'home') {
     return (
-      <div className="relative flex flex-col h-full items-center justify-center bg-amber-50 gap-3 p-4 [@media(min-height:760px)]:gap-6 [@media(min-height:760px)]:p-8">
-        <button
-          type="button"
-          onClick={() => setPhase('parent-gate')}
-          aria-label="Pro rodiče"
-          className="absolute top-4 right-4 text-2xl opacity-40 hover:opacity-100 transition"
-        >
-          ⚙️
-        </button>
-        <img src={beeIdleUrl} alt="" className="h-[24dvh] [@media(min-height:760px)]:h-[32dvh] w-auto select-none" draggable={false} />
-        <h1 className="text-4xl font-bold text-amber-900">Ahoj, {profile.name}!</h1>
-        <p className="text-xl text-amber-800">Pojďme nakrmit včelku.</p>
-        {games.length > 1 ? (
-          <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
-            {games.map((game, index) => (
-              <button
-                key={game.mode}
-                type="button"
-                onClick={() => {
-                  setMode(game.mode)
-                  setPhase('playing')
-                }}
-                className={`rounded-2xl bg-amber-500 text-white py-3 px-4 font-bold shadow active:scale-95 ${games.length === 3 && index === 2 ? 'col-span-2' : ''}`}
-              >
-                <span className="block text-3xl">{game.glyph}</span>
-                <span className="block text-base [@media(min-height:760px)]:text-lg">{game.label}</span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setMode('tables')
-              setPhase('playing')
-            }}
-            className="rounded-2xl bg-amber-500 text-white py-4 px-8 text-2xl font-bold shadow active:scale-95"
-          >
-            HRÁT
-          </button>
-        )}
-      </div>
+      <HomeScreen
+        profile={profile}
+        cards={cards}
+        sessions={sessions}
+        onPlay={m => { setMode(m); setPhase('playing') }}
+        onParent={() => setPhase('parent-gate')}
+      />
     )
   }
 
@@ -249,8 +208,8 @@ export default function App() {
         cards={cards.filter(c => opsForMode(mode).includes(c.op) && isCardActive(c, profile))}
         mode={mode}
         profileId={profile.id}
-        goalCount={beeScene.goalCount}
-        scene={beeScene}
+        goalCount={catScene.goalCount}
+        scene={catScene}
         onFinish={onFinish}
       />
     )

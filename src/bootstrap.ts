@@ -15,7 +15,7 @@ export async function bootstrapDefaultProfile(): Promise<{ profile: Profile; car
       avatar: '🐝',
       createdAt: Date.now(),
       unlockedTables: [1, 2, 5, 10],
-      selectedScene: 'bee',
+      selectedScene: 'cat',
       divisionEnabled: true,
       arithEnabled: true,
       clockEnabled: true,

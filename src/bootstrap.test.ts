@@ -36,7 +36,7 @@ describe('bootstrapDefaultProfile', () => {
       avatar: '🐝',
       createdAt: 1,
       unlockedTables: [2],
-      selectedScene: 'bee',
+      selectedScene: 'cat',
     } as unknown as Profile
     await putProfile(db, legacyProfile)
     const legacyCard = {
@@ -88,7 +88,7 @@ describe('arithmetic profile migration', () => {
     const db = await openDb()
     await putProfile(db, {
       id: 'anicka', name: 'Emička', avatar: '🐝', createdAt: 1,
-      unlockedTables: [2], selectedScene: 'bee', divisionEnabled,
+      unlockedTables: [2], selectedScene: 'cat', divisionEnabled,
     } as Profile)
     db.close()
     const { profile } = await bootstrapDefaultProfile()
