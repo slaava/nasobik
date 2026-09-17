@@ -81,3 +81,23 @@ html, body, #root {
 /* Settings gear: full opacity, the 40% version dithers into noise. */
 [data-theme="eink"] .opacity-40 { opacity: 1; }
 [data-theme="eink"] .ring-red-300 { --tw-ring-color: #000; }
+
+/* ---------------------------------------------------------------------------
+   dvh fallback for old WebKits (e-ink readers). A browser that does not know
+   `dvh` drops the whole declaration, and elements sized only by dvh (the SVG
+   clock face, the bee) collapse to 0px. Each rule repeats the value in vh
+   first; browsers that understand dvh take the second declaration.
+--------------------------------------------------------------------------- */
+.h-dvh { height: 100vh; height: 100dvh; }
+.h-\[24dvh\] { height: 24vh; height: 24dvh; }
+.h-\[26dvh\] { height: 26vh; height: 26dvh; }
+.w-\[24dvh\] { width: 24vh; width: 24dvh; }
+.w-\[26dvh\] { width: 26vh; width: 26dvh; }
+.max-h-\[13dvh\] { max-height: 13vh; max-height: 13dvh; }
+.max-h-\[22dvh\] { max-height: 22vh; max-height: 22dvh; }
+.max-h-\[36dvh\] { max-height: 36vh; max-height: 36dvh; }
+.max-h-\[38dvh\] { max-height: 38vh; max-height: 38dvh; }
+.max-w-\[13dvh\] { max-width: 13vh; max-width: 13dvh; }
+@media (min-height: 760px) {
+  .\[\@media\(min-height\:760px\)\]\:h-\[32dvh\] { height: 32vh; height: 32dvh; }
+}
