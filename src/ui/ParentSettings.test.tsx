@@ -111,3 +111,18 @@ it('shows six clock levels, retained mastery and both clock toggles', async () =
   await userEvent.click(screen.getByLabelText('Poznávání hodin'))
   expect(onToggleClock).toHaveBeenCalledTimes(1)
 })
+
+describe('ParentSettings e-ink toggle', () => {
+  it('toggles the device-level e-ink theme', async () => {
+    localStorage.clear()
+    delete document.documentElement.dataset.theme
+    render(<ParentSettings {...baseProps} />)
+    const box = screen.getByLabelText('Režim pro e-ink čtečku') as HTMLInputElement
+    expect(box.checked).toBe(false)
+    await userEvent.click(box)
+    expect(document.documentElement.dataset.theme).toBe('eink')
+    expect(localStorage.getItem('nasobik.eink')).toBe('1')
+    await userEvent.click(box)
+    expect(document.documentElement.dataset.theme).toBeUndefined()
+  })
+})

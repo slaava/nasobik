@@ -5,3 +5,79 @@
 html, body, #root {
   height: 100%;
 }
+
+/* ---------------------------------------------------------------------------
+   E-ink mode (html[data-theme="eink"], see src/eink.ts)
+
+   E-ink panels ghost on every partial refresh and render greys as dither, so:
+   - kill all motion (transitions, animations, the active:scale press effect),
+   - collapse the amber palette to black on white,
+   - replace drop shadows with solid borders so buttons keep an edge.
+   Utility classes are overridden by name so the components stay untouched.
+--------------------------------------------------------------------------- */
+[data-theme="eink"] *,
+[data-theme="eink"] *::before,
+[data-theme="eink"] *::after {
+  transition: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+[data-theme="eink"] .active\:scale-95:active {
+  transform: none;
+  outline: 3px solid #000;
+  outline-offset: -3px;
+}
+
+[data-theme="eink"] .bg-amber-50 { background-color: #fff; }
+[data-theme="eink"] .bg-amber-100,
+[data-theme="eink"] .bg-amber-200,
+[data-theme="eink"] .bg-amber-300 { background-color: #fff; }
+[data-theme="eink"] .bg-amber-300 { outline: 3px solid #000; outline-offset: -3px; }
+/* !important: buttons combine bg-amber-500 with text-amber-900/text-white and
+   the text-amber-* override below would otherwise win → black on black. */
+[data-theme="eink"] .bg-amber-500,
+[data-theme="eink"] .bg-amber-500 * { background-color: #000; color: #fff !important; }
+
+[data-theme="eink"] .text-amber-600,
+[data-theme="eink"] .text-amber-700,
+[data-theme="eink"] .text-amber-800,
+[data-theme="eink"] .text-amber-900 { color: #000; }
+
+/* Everything that used a white card on the amber background gets a border. */
+[data-theme="eink"] .bg-white,
+[data-theme="eink"] .bg-amber-100,
+[data-theme="eink"] .bg-amber-300 { border: 2px solid #000; }
+[data-theme="eink"] .bg-amber-500 { border: 2px solid #000; }
+[data-theme="eink"] .bg-amber-200 { border: 2px solid #000; }
+
+/* Progress bar fill inside the hive. */
+[data-theme="eink"] .bg-amber-200 > .bg-amber-500 { border: 0; }
+
+/* Heatmap cells: greys/colours → grey ramp that survives 16-level e-ink. */
+[data-theme="eink"] .bg-gray-200 { background-color: #fff; border: 1px solid #000; }
+[data-theme="eink"] .bg-red-300 { background-color: #fff; border: 1px solid #000; }
+[data-theme="eink"] .bg-orange-300 { background-color: #ddd; }
+[data-theme="eink"] .bg-yellow-300 { background-color: #aaa; }
+[data-theme="eink"] .bg-lime-400 { background-color: #666; }
+[data-theme="eink"] .bg-green-600 { background-color: #000; color: #fff; }
+
+/* Digital clock display: dark panel with light text stays readable inverted. */
+[data-theme="eink"] .bg-slate-900 { background-color: #000; }
+[data-theme="eink"] .text-lime-300 { color: #fff; }
+
+/* Analog clock: drop the blue/amber hues, keep hands distinguishable by width. */
+[data-theme="eink"] [data-testid="clock-face"] [stroke="#fcd34d"],
+[data-theme="eink"] [data-testid="clock-face"] [stroke="#92400e"],
+[data-theme="eink"] [data-testid="clock-face"] [stroke="#78350f"],
+[data-theme="eink"] [data-testid="clock-face"] [stroke="#2563eb"] { stroke: #000; }
+[data-theme="eink"] [data-testid="clock-face"] [fill="#78350f"],
+[data-theme="eink"] [data-testid="clock-face"] [fill="#2563eb"] { fill: #000; }
+
+/* Illustrations: preview what the panel will show anyway (greyscale). */
+[data-theme="eink"] img { filter: grayscale(1) contrast(1.15); }
+
+/* Settings gear: full opacity, the 40% version dithers into noise. */
+[data-theme="eink"] .opacity-40 { opacity: 1; }
+[data-theme="eink"] .ring-red-300 { --tw-ring-color: #000; }

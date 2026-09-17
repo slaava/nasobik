@@ -4,6 +4,7 @@ import type { Card, Session, ClockLevel } from '../core/types'
 import { todayStats, weekStats } from '../core/stats'
 import { formatQuestion, isArithOp } from '../core/cards'
 import { Heatmap } from './Heatmap'
+import { useEink } from '../eink'
 
 type Props = {
   name: string
@@ -41,6 +42,7 @@ export function ParentSettings({
   onBack,
 }: Props) {
   const [nameDraft, setNameDraft] = useState(name)
+  const [eink, setEink] = useEink()
   // Keep the editable draft synchronized with the persisted name supplied by App.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setNameDraft(name), [name])
@@ -141,6 +143,25 @@ export function ParentSettings({
           </label>
           <p className="text-xs text-amber-600 mt-2 max-w-md">
             Přidá na úvodní obrazovku druhou hru. Příklady jsou náhodné do 100, chybné se vrací, dokud je dítě neumí.
+          </p>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-xl font-semibold text-amber-900 mb-1">Zobrazení</h2>
+        <div className="flex flex-col gap-3 items-start">
+          <label className="inline-flex items-center gap-3 rounded-2xl bg-white shadow px-4 py-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={eink}
+              onChange={e => setEink(e.target.checked)}
+              className="w-5 h-5"
+            />
+            <span className="text-lg text-amber-900">Režim pro e-ink čtečku</span>
+          </label>
+          <p className="text-xs text-amber-600 mt-2 max-w-md">
+            Bez animací, černobíle a s vysokým kontrastem. Platí pro toto zařízení, ne pro profil.
+            Zapne se i otevřením adresy s <span className="font-mono">?eink=1</span>.
           </p>
         </div>
       </section>
