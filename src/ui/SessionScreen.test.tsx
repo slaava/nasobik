@@ -8,7 +8,7 @@ import { generateCardsForTables, generateArithCard } from '../core/cards'
 import App from '../App'
 import { bootstrapDefaultProfile } from '../bootstrap'
 import { openDb, putProfile, putCards, getCardsForProfile, getSessionsForProfile } from '../db/repo'
-import { beeScene } from '../scenes/bee'
+import { catScene } from '../scenes/cat'
 
 describe('SessionScreen', () => {
   it('shows the first question on mount', () => {
@@ -18,21 +18,21 @@ describe('SessionScreen', () => {
         mode="tables"
         cards={cards}
         goalCount={3}
-        scene={beeScene}
+        scene={catScene}
         onFinish={() => {}}
       />,
     )
     expect(screen.getByText(/×/)).toBeInTheDocument()
   })
 
-  it('typing the correct answer via numpad advances the hive', async () => {
+  it('typing the correct answer via numpad advances the dots', async () => {
     const cards = generateCardsForTables('p1', [2], false)
     render(
       <SessionScreen
         mode="tables"
         cards={cards}
         goalCount={3}
-        scene={beeScene}
+        scene={catScene}
         onFinish={() => {}}
       />,
     )
@@ -45,7 +45,7 @@ describe('SessionScreen', () => {
       await userEvent.click(screen.getByRole('button', { name: ch }))
     }
     await userEvent.click(screen.getByRole('button', { name: /hotovo/i }))
-    expect(screen.getByText(/1 \/ 3/)).toBeInTheDocument()
+    expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
   })
 
   it('calls onFinish when goal reached', async () => {
@@ -56,7 +56,7 @@ describe('SessionScreen', () => {
         mode="tables"
         cards={cards}
         goalCount={1}
-        scene={beeScene}
+        scene={catScene}
         onFinish={onFinish}
       />,
     )
@@ -72,14 +72,14 @@ describe('SessionScreen', () => {
 })
 
 describe('SessionScreen arithmetic mode', () => {
-  it('generates a question for an empty deck and a correct answer advances the hive', async () => {
+  it('generates a question for an empty deck and a correct answer advances the dots', async () => {
     render(
       <SessionScreen
         mode="arith"
         profileId="p1"
         cards={[]}
         goalCount={3}
-        scene={beeScene}
+        scene={catScene}
         onFinish={() => {}}
       />,
     )
@@ -94,12 +94,12 @@ describe('SessionScreen arithmetic mode', () => {
       await userEvent.click(screen.getByRole('button', { name: digit }))
     }
     await userEvent.click(screen.getByRole('button', { name: /hotovo/i }))
-    expect(screen.getByText(/1 \/ 3/)).toBeInTheDocument()
+    expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
   })
 
   it('calls onFinish exactly once even when finished props change', async () => {
     const onFinish = vi.fn()
-    const props = { mode: 'arith' as const, cards: [], goalCount: 1, scene: beeScene, onFinish }
+    const props = { mode: 'arith' as const, cards: [], goalCount: 1, scene: catScene, onFinish }
     const { rerender } = render(<SessionScreen {...props} />)
     const match = screen.getByRole('heading').textContent!.match(/(\d+)\s*([+−])\s*(\d+)/)!
     const answer = match[2] === '+' ? Number(match[1]) + Number(match[3]) : Number(match[1]) - Number(match[3])
@@ -129,13 +129,13 @@ describe('App game selection and session persistence', () => {
     expect(screen.getByTestId('clock-face')).toBeInTheDocument()
   })
 
-  it('offers only HRÁT in tables mode when arithmetic and clocks are disabled', async () => {
+  it('offers only the tables row when arithmetic and clocks are disabled', async () => {
     const { profile } = await bootstrapDefaultProfile()
     const db = await openDb()
     await putProfile(db, { ...profile, arithEnabled: false, clockEnabled: false })
     db.close()
     render(<App />)
-    await userEvent.click(await screen.findByRole('button', { name: 'HRÁT' }))
+    await userEvent.click(await screen.findByRole('button', { name: /Násobení/ }))
     expect(screen.getByRole('heading')).toHaveTextContent(/[×÷]/)
   })
 
@@ -152,7 +152,7 @@ describe('App game selection and session persistence', () => {
     render(<App />)
     await userEvent.click(await screen.findByRole('button', { name: /\+ −\s*Sčítání a odčítání/ }))
     expect(screen.getByRole('heading')).toHaveTextContent('1 + 1')
-    for (let i = 0; i < beeScene.goalCount; i++) {
+    for (let i = 0; i < catScene.goalCount; i++) {
       const match = screen.getByRole('heading').textContent!.match(/(\d+)\s*([+−])\s*(\d+)/)!
       const answer = match[2] === '+' ? Number(match[1]) + Number(match[3]) : Number(match[1]) - Number(match[3])
       for (const key of String(answer)) fireEvent.keyDown(window, { key })
@@ -167,7 +167,7 @@ describe('App game selection and session persistence', () => {
       expect(await checkDb.get('cards', mistake.id)).toBeUndefined()
       const sessions = await getSessionsForProfile(checkDb, profile.id)
       expect(sessions).toHaveLength(1)
-      expect(sessions[0].answers).toHaveLength(beeScene.goalCount)
+      expect(sessions[0].answers).toHaveLength(catScene.goalCount)
       expect(sessions[0].answers.every(a => a.op === 'add' || a.op === 'sub')).toBe(true)
     } finally {
       checkDb.close()
@@ -178,9 +178,9 @@ describe('App game selection and session persistence', () => {
 })
 
 describe('SessionScreen clocks', () => {
-  const props = { mode: 'clock' as const, goalCount: 3, scene: beeScene, onFinish: () => {} }
+  const props = { mode: 'clock' as const, goalCount: 3, scene: catScene, onFinish: () => {} }
 
-  it('renders hours choices and advances the hive on a correct tap', async () => {
+  it('renders hours choices and advances the dots on a correct tap', async () => {
     render(<SessionScreen {...props} cards={cardsForClockLevel('p1', 'hours')} />)
     const hour = Number(screen.getByTestId('clock-face').getAttribute('data-hour'))
     expect(screen.getAllByRole('button', { name: /^\d+:\d\d$/ })).toHaveLength(3)
@@ -188,7 +188,7 @@ describe('SessionScreen clocks', () => {
     await userEvent.keyboard('123{Enter}')
     expect(screen.getByTestId('clock-face')).toHaveAttribute('data-hour', String(hour))
     await userEvent.click(screen.getByRole('button', { name: formatTime(hour * 100) }))
-    expect(screen.getByText('1 / 3')).toBeInTheDocument()
+    expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
   })
 
   it('keeps identical choices during correction and requires the correct tap', async () => {
@@ -212,13 +212,13 @@ describe('SessionScreen clocks', () => {
     await userEvent.keyboard('730')
     expect(screen.getByTestId('answer-input')).toHaveTextContent('7:30')
     await userEvent.keyboard('{Backspace}{Backspace}{Backspace}1935{Enter}')
-    expect(screen.getByText('1 / 3')).toBeInTheDocument()
+    expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
   })
 
   it('accepts 1930 for a mastered analog 7:30 but rejects it for 24-to-12 conversion', async () => {
     const { unmount } = render(<SessionScreen {...props} cards={[{ ...freshCard('p1', 'clk-read', 7, 30), box: 3 }]} />)
     await userEvent.keyboard('1930{Enter}')
-    expect(screen.getByText('1 / 3')).toBeInTheDocument()
+    expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
     unmount()
     render(<SessionScreen {...props} cards={[freshCard('p1', 'clk-24to12', 19, 30)]} />)
     expect(screen.getByTestId('digital-display')).toHaveTextContent('19:30')
@@ -244,10 +244,23 @@ describe('SessionScreen clocks', () => {
 })
 
 it('returns a missed mastered clock to choices even in a one-card deck', async () => {
-  render(<SessionScreen mode="clock" goalCount={3} scene={beeScene} onFinish={() => {}} cards={[{ ...freshCard('p1', 'clk-read', 7, 30), box: 3 }]} />)
+  render(<SessionScreen mode="clock" goalCount={3} scene={catScene} onFinish={() => {}} cards={[{ ...freshCard('p1', 'clk-read', 7, 30), box: 3 }]} />)
   await userEvent.keyboard('830{Enter}')
   await userEvent.keyboard('730{Enter}')
   expect(screen.getAllByRole('button', { name: /^\d+:\d\d$/ })).toHaveLength(3)
   await userEvent.click(screen.getByRole('button', { name: '7:30' }))
-  expect(screen.getByText('1 / 3')).toBeInTheDocument()
+  expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
+})
+
+it('shows the game name and 20 session dots in the header', () => {
+  render(<SessionScreen cards={generateCardsForTables('p1', [2], false)} goalCount={20} scene={catScene} mode="tables" onFinish={() => {}} />)
+  expect(screen.getByText('Násobení')).toBeInTheDocument()
+  expect(document.querySelectorAll('[data-dot]')).toHaveLength(20)
+  expect(screen.queryByText(/\d+ \/ \d+/)).toBeNull()
+})
+
+it('passes "dunno" to the scene when the child gives up', async () => {
+  render(<SessionScreen cards={generateCardsForTables('p1', [2], false)} goalCount={20} scene={catScene} mode="tables" onFinish={() => {}} />)
+  await userEvent.click(screen.getByText('Já nevím'))
+  expect(document.querySelector('svg[data-mood="surprised"]')).not.toBeNull()
 })
