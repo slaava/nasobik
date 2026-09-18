@@ -22,7 +22,7 @@ export function cardsForClockLevel(profileId: string, level: ClockLevel): Card[]
     five: [5, 10, 20, 25, 35, 40, 50, 55], digital: [0, 30],
   }[level]
   const ops: CardOp[] = level === 'digital' ? ['clk-24to12', 'clk-12to24']
-    : [level === 'phrase' ? 'clk-phrase' : 'clk-read']
+    : level === 'phrase' ? ['clk-phrase', 'clk-phrase-dig'] : ['clk-read']
   const cards: Card[] = []
   for (const op of ops) {
     for (let a = level === 'digital' ? 13 : 1; a <= (level === 'digital' ? 23 : 12); a++) {
@@ -34,7 +34,7 @@ export function cardsForClockLevel(profileId: string, level: ClockLevel): Card[]
 
 export function clockLevelOf(card: Card): ClockLevel {
   if (!isClockOp(card.op)) throw new Error('Not a clock card')
-  if (card.op === 'clk-phrase') return 'phrase'
+  if (card.op === 'clk-phrase' || card.op === 'clk-phrase-dig') return 'phrase'
   if (card.op !== 'clk-read') return 'digital'
   if (card.b === 0) return 'hours'
   if (card.b === 30) return 'half'
@@ -44,6 +44,7 @@ export function clockLevelOf(card: Card): ClockLevel {
 
 export function inputModeFor(card: Card): InputMode {
   if (card.op === 'clk-phrase') return 'choice-clock'
+  if (card.op === 'clk-phrase-dig') return 'choice-digital'
   if (card.op === 'clk-read' && [0, 15, 30, 45].includes(card.b) && card.box <= 2) return 'choice-digital'
   return 'keypad'
 }

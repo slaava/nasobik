@@ -6,7 +6,7 @@ const seq = (...vals: number[]) => { let i = 0; return () => vals[i++ % vals.len
 
 describe('clock domain', () => {
   it('generates each level with unique cards and round-trips every level', () => {
-    const counts = [12, 12, 24, 48, 96, 44]
+    const counts = [12, 12, 24, 96, 96, 44]
     const ids: string[] = []
     CLOCK_LEVELS.forEach((level, i) => {
       const cards = cardsForClockLevel('p', level)
@@ -29,6 +29,10 @@ describe('clock domain', () => {
     expect(inputModeFor({ ...hours, box: 3 })).toBe('keypad')
     expect(inputModeFor(cardsForClockLevel('p', 'five')[0]!)).toBe('keypad')
     expect(inputModeFor(cardsForClockLevel('p', 'phrase')[0]!)).toBe('choice-clock')
+    expect(inputModeFor({ ...cardsForClockLevel('p', 'phrase')[0]!, op: 'clk-phrase-dig' })).toBe('choice-digital')
+    const phraseOps = new Set(cardsForClockLevel('p', 'phrase').map(c => c.op))
+    expect(phraseOps).toEqual(new Set(['clk-phrase', 'clk-phrase-dig']))
+    expect(clockLevelOf({ ...cardsForClockLevel('p', 'phrase')[0]!, op: 'clk-phrase-dig' })).toBe('phrase')
     expect(inputModeFor(cardsForClockLevel('p', 'digital')[0]!)).toBe('keypad')
   })
 

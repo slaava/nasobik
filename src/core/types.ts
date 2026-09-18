@@ -16,7 +16,8 @@ export type Profile = {
 //   div → "(a*b) ÷ a = ?", expected = b
 // For mul/div we store a as the table number (divisor) and b as the multiplier, so
 // the two ops form a clean pair per (a, b) fact with independent Leitner state.
-export type CardOp = 'mul' | 'div' | 'add' | 'sub' | 'clk-read' | 'clk-phrase' | 'clk-24to12' | 'clk-12to24'
+// clk-phrase: Czech phrase → pick the matching analog clock; clk-phrase-dig: the same phrase → pick the digital time.
+export type CardOp = 'mul' | 'div' | 'add' | 'sub' | 'clk-read' | 'clk-phrase' | 'clk-phrase-dig' | 'clk-24to12' | 'clk-12to24'
 export type GameMode = 'tables' | 'arith' | 'clock'
 
 export type Card = {

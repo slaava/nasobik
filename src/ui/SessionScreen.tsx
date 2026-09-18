@@ -143,7 +143,7 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
   }
 
   const clock = isClockOp(card.op)
-  const hasVisual = clock && card.op !== 'clk-phrase'
+  const hasVisual = clock && card.op !== 'clk-phrase' && card.op !== 'clk-phrase-dig'
   const dayPart = dayPartFor(card.a)
   // The clock face takes what the answer area leaves: three choice buttons are
   // low, the numpad is tall. Fixed vh sizes keep old WebKit happy (no flex
@@ -181,6 +181,7 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
             {clock ? formatQuestion(card) : `${formatQuestion(card)} = ?`}
           </h1>
           {card.op === 'clk-phrase' && <p className="text-sm [@media(min-height:760px)]:text-base text-ink">Který ciferník to ukazuje?</p>}
+          {card.op === 'clk-phrase-dig' && <p className="text-sm [@media(min-height:760px)]:text-base text-ink">Který digitální čas to je?</p>}
 
           {inputMode === 'keypad' && <div data-testid="answer-input" className="text-2xl [@media(min-height:760px)]:text-3xl lg:text-4xl font-mono border-b-[3px] border-accent bg-transparent px-4 py-1.5 [@media(min-height:760px)]:px-5 [@media(min-height:760px)]:py-2 lg:px-6 lg:py-3 min-w-[5rem] text-center text-ink tabular-nums min-h-[2.75rem] [@media(min-height:760px)]:min-h-[3.5rem] lg:min-h-[4rem]">
             {clock ? formatClockInput(input) : input || ' '}

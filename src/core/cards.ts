@@ -17,7 +17,7 @@ export function expectedAnswer(card: Card): number {
 
 export function formatQuestion(card: Card): string {
   if (card.op === 'clk-read') return 'Kolik je hodin?'
-  if (card.op === 'clk-phrase') return phraseFor(card.a, card.b)
+  if (card.op === 'clk-phrase' || card.op === 'clk-phrase-dig') return phraseFor(card.a, card.b)
   if (card.op === 'clk-24to12') return 'Kolik ukazují ručičkové hodiny?'
   if (card.op === 'clk-12to24') return 'Napiš čas digitálně.'
   if (card.op === 'add') return `${card.a} + ${card.b}`
@@ -75,10 +75,10 @@ export function generateArithCard(profileId: string, rng: () => number = Math.ra
   return freshCard(profileId, op, a, b)
 }
 
-export const CLOCK_OPS: readonly CardOp[] = ['clk-read', 'clk-phrase', 'clk-24to12', 'clk-12to24']
+export const CLOCK_OPS: readonly CardOp[] = ['clk-read', 'clk-phrase', 'clk-phrase-dig', 'clk-24to12', 'clk-12to24']
 
 export function isCorrectAnswer(card: Card, value: number): boolean {
-  if (card.op === 'clk-read' || card.op === 'clk-phrase') {
+  if (card.op === 'clk-read' || card.op === 'clk-phrase' || card.op === 'clk-phrase-dig') {
     return value === expectedAnswer(card) || value === ((card.a + 12) % 24) * 100 + card.b
   }
   return value === expectedAnswer(card)

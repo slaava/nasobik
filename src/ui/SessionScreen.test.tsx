@@ -237,6 +237,16 @@ describe('SessionScreen clocks', () => {
     expect(screen.getByRole('button', { name: '7:30' })).toBeInTheDocument()
   })
 
+  it('asks phrases with digital-time choices and accepts the matching time', async () => {
+    render(<SessionScreen {...props} cards={[freshCard('p1', 'clk-phrase-dig', 4, 30)]} />)
+    expect(screen.getByRole('heading')).toHaveTextContent('půl páté')
+    expect(screen.getByText('Který digitální čas to je?')).toBeInTheDocument()
+    expect(screen.queryByTestId('clock-face')).toBeNull()
+    expect(screen.getAllByRole('button', { name: /^\d+:\d\d$/ })).toHaveLength(3)
+    await userEvent.click(screen.getByRole('button', { name: '4:30' }))
+    expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
+  })
+
   it('explains an empty clock deck', () => {
     render(<SessionScreen {...props} cards={[]} />)
     expect(screen.getByText(/úroveň hodin/)).toBeInTheDocument()
