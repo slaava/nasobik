@@ -26,7 +26,7 @@ function CatHero(ctx: SceneCtx) {
 
 // eslint-disable-next-line react-refresh/only-export-components
 function SessionDots({ correctCount, goalCount }: SceneCtx) {
-  return <ProgressDots total={goalCount} filled={correctCount} label="Sezení" size="sm" className="ml-3 shrink-0" />
+  return <ProgressDots total={goalCount} filled={correctCount} label="Sezení" size="sm" className="shrink-0" />
 }
 
 export const catScene: Scene = {

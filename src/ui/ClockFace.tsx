@@ -28,7 +28,7 @@ export function ClockFace({ hour, minute, showMinuteRing = false, className }: {
         <text key={n} {...point(n * 30, ringRadius)} fontSize="11" fill="var(--accent)" textAnchor="middle" dominantBaseline="central">{n * 5}</text>
       ))}
       <line x1="100" y1="100" x2="100" y2="52" stroke="var(--ink)" strokeWidth="9" strokeLinecap="round" transform={`rotate(${(hour % 12) * 30 + minute * 0.5} 100 100)`} />
-      <line x1="100" y1="100" x2="100" y2={100 - radius + 8} stroke="var(--accent)" strokeWidth="5" strokeLinecap="round" transform={`rotate(${minute * 6} 100 100)`} />
+      <line x1="100" y1="100" x2="100" y2={100 - radius + 8} stroke="var(--minute-hand)" strokeWidth="5" strokeLinecap="round" transform={`rotate(${minute * 6} 100 100)`} />
       <circle cx="100" cy="100" r="5" fill="var(--ink)" />
     </svg>
   )

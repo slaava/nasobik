@@ -14,6 +14,9 @@ html, body, #root { height: 100%; }
   --muted: #cfe3da;
   --fur: #d9d5cf;
   --nose: #e07a8c;
+  /* Minute hand of the analog clock: accent in colour, mid grey on e-ink so it
+     differs from the black hour hand even without hue. */
+  --minute-hand: #2f9e78;
 }
 
 /* E-ink render (html[data-theme="eink"], toggled by src/eink.ts): 1-bit safe, no motion. */
@@ -26,6 +29,7 @@ html, body, #root { height: 100%; }
   --muted: #000000;
   --fur: #ffffff;
   --nose: #000000;
+  --minute-hand: #7a7a7a;
 }
 [data-theme="eink"] *,
 [data-theme="eink"] *::before,
