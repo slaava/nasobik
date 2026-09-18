@@ -3,7 +3,8 @@ export type CatEvent = 'greeting' | 'start' | 'correct' | 'streak' | 'wrong' | '
 export type CatMood = 'neutral' | 'happy' | 'surprised'
 
 // Czech, child-facing, short enough for a one-line bubble on a 6" screen.
-// `{name}` is replaced by the child's name. Keep every list long enough that a
+// `{name}` is replaced by the child's name and is allowed ONLY in `greeting`
+// (the home screen is the one caller that knows the name). Keep every list long enough that a
 // 20-question session does not repeat itself for the frequent events.
 export const PHRASES: Record<CatEvent, readonly string[]> = {
   greeting: [
@@ -25,7 +26,7 @@ export const PHRASES: Record<CatEvent, readonly string[]> = {
     'Já ti věřím.',
     'Klidně si to říkej nahlas.',
     'Soustředění… a start!',
-    'Jedeme, {name}!',
+    'Jedeme na to!',
     'Ukaž, co umíš.',
     'Každý příklad se počítá.',
     'Pěkně jeden po druhém.',
@@ -99,7 +100,7 @@ export const PHRASES: Record<CatEvent, readonly string[]> = {
     'To šlo jako po másle.',
     'Hotovo! Já jdu spát, ty si hraj.',
     'Bezva hra. Zítra zas?',
-    'Výborně, {name}!',
+    'Výborně, jsi jednička!',
     'Takhle se to dělá.',
   ],
   'finish-mixed': [
@@ -109,7 +110,7 @@ export const PHRASES: Record<CatEvent, readonly string[]> = {
     'Hotovo! Ty záludné příště dáme.',
     'Dobré. Pár příkladů si ještě pohlídáme.',
     'Konec, a bylo to fajn. Něco ještě potrénujeme.',
-    'Hotovo, {name}. Zbytek doženeme.',
+    'Hotovo. Zbytek doženeme.',
     'Snaha byla vidět. Příště o krok dál.',
   ],
 }

@@ -145,6 +145,10 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
   const clock = isClockOp(card.op)
   const hasVisual = clock && card.op !== 'clk-phrase'
   const dayPart = dayPartFor(card.a)
+  // The clock face takes what the answer area leaves: three choice buttons are
+  // low, the numpad is tall. Fixed vh sizes keep old WebKit happy (no flex
+  // percentage heights), max-w caps them on narrow phones.
+  const faceSize = inputMode === 'keypad' ? 'h-[28vh] w-[28vh]' : 'h-[46vh] w-[46vh]'
 
   return (
     <div className="flex flex-col h-dvh bg-paper overflow-hidden">
@@ -162,7 +166,7 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
           <div className={`flex flex-col items-center space-y-2 min-w-0 ${hasVisual ? '[&_svg[data-mood]]:w-20 [&_svg[data-mood]]:h-16' : ''}`}>
             <Hero {...sceneCtx} />
           </div>
-          {card.op === 'clk-read' && <ClockFace hour={card.a} minute={card.b} showMinuteRing className="mt-2 h-[28vh] w-[28vh] max-w-[80vw] max-h-[80vw] lg:h-72 lg:w-72 shrink-0" />}
+          {card.op === 'clk-read' && <ClockFace hour={card.a} minute={card.b} showMinuteRing className={`mt-2 ${faceSize} max-w-[80vw] max-h-[80vw] lg:h-72 lg:w-72 shrink-0`} />}
           {card.op === 'clk-24to12' && <DigitalDisplay value={card.a * 100 + card.b} className="mt-6 text-5xl lg:text-6xl" />}
           {card.op === 'clk-12to24' && (
             <div className="flex flex-col items-center space-y-1 mt-2">

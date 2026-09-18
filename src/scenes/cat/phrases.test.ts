@@ -23,6 +23,12 @@ describe('phrases', () => {
     expect(pickPhrase('greeting', 0, 'Ema')).toContain('Ema')
     expect(pickPhrase('greeting', 0, 'Ema')).not.toContain('{name}')
   })
+  it('uses {name} only in greeting (other callers have no name)', () => {
+    for (const ev of EVENTS) {
+      if (ev === 'greeting') continue
+      for (const p of PHRASES[ev]) expect(p, `${ev}: ${p}`).not.toContain('{name}')
+    }
+  })
   it('maps events to moods', () => {
     expect(moodFor('greeting')).toBe('neutral')
     expect(moodFor('start')).toBe('neutral')
