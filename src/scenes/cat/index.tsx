@@ -5,8 +5,8 @@ import { Bubble } from './Bubble'
 import { moodFor, pickPhrase, type CatEvent } from './phrases'
 import { ProgressDots } from '../../ui/ProgressDots'
 
-function eventOf(ctx: SceneCtx): CatEvent | null {
-  if (ctx.lastEvent === 'idle') return null
+function eventOf(ctx: SceneCtx): CatEvent {
+  if (ctx.lastEvent === 'idle') return 'start'
   if (ctx.lastEvent === 'correct') return ctx.streak >= 3 ? 'streak' : 'correct'
   return ctx.lastEvent // 'wrong' | 'dunno'
 }
@@ -15,11 +15,11 @@ function eventOf(ctx: SceneCtx): CatEvent | null {
 // eslint-disable-next-line react-refresh/only-export-components
 function CatHero(ctx: SceneCtx) {
   const event = eventOf(ctx)
-  const mood = event ? moodFor(event) : 'neutral'
+  const mood = moodFor(event)
   return (
     <div className="flex items-center">
       <CatHead mood={mood} className="w-28 h-24 lg:w-48 lg:h-40 shrink-0" />
-      {event && <Bubble className="ml-2 text-sm lg:text-lg">{pickPhrase(event, ctx.phraseSeed)}</Bubble>}
+      <Bubble className="ml-2 text-sm lg:text-lg">{pickPhrase(event, ctx.phraseSeed)}</Bubble>
     </div>
   )
 }

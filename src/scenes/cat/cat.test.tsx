@@ -11,9 +11,10 @@ describe('catScene', () => {
     expect(catScene.id).toBe('cat')
     expect(catScene.goalCount).toBe(20)
   })
-  it('Hero: idle → neutral cat, no bubble text from answer events', () => {
-    const { container } = render(<catScene.Hero {...base} lastEvent="idle" />)
+  it('Hero: idle → neutral cat with a start phrase in the bubble', () => {
+    const { container } = render(<catScene.Hero {...base} lastEvent="idle" phraseSeed={2} />)
     expect(container.querySelector('svg[data-mood="neutral"]')).not.toBeNull()
+    expect(screen.getByText(PHRASES.start[2 % PHRASES.start.length]!)).toBeInTheDocument()
   })
   it('Hero: correct → happy + a correct phrase', () => {
     render(<catScene.Hero {...base} correctCount={1} lastEvent="correct" streak={1} phraseSeed={1} />)

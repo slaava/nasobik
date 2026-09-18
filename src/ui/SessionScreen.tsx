@@ -29,6 +29,10 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
   const [state, dispatch] = useReducer(sessionReducer, initSessionState())
   const [input, setInput] = useState('')
   const askedAtRef = useRef<number>(0)
+  // Random offset drawn once per session: phrases still change deterministically
+  // with each answer (no reshuffle on re-render), but two sessions in a row do
+  // not open with the same line.
+  const [phraseOffset] = useState(() => Math.floor(Math.random() * 1000))
 
   // START fires exactly once per mount. App passes fresh cards on each remount
   // (after the summary screen is dismissed), so we don't need a dep array that
@@ -112,7 +116,7 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
     goalCount: state.goalCount,
     lastEvent: lastEventOf(state),
     streak: streakOf(state.answers),
-    phraseSeed: state.answers.length,
+    phraseSeed: phraseOffset + state.answers.length,
   }
   const Hero = scene.Hero
   const Container = scene.Container
