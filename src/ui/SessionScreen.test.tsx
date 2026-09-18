@@ -264,3 +264,40 @@ it('passes "dunno" to the scene when the child gives up', async () => {
   await userEvent.click(screen.getByText('Já nevím'))
   expect(document.querySelector('svg[data-mood="surprised"]')).not.toBeNull()
 })
+
+describe('leaving a session early', () => {
+  it('shows a home button in the header that calls onExit, and hides it without onExit', async () => {
+    const onExit = vi.fn()
+    const { unmount } = render(<SessionScreen cards={generateCardsForTables('p1', [2], false)} goalCount={20} scene={catScene} mode="tables" onFinish={() => {}} onExit={onExit} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Domů' }))
+    expect(onExit).toHaveBeenCalledTimes(1)
+    unmount()
+    render(<SessionScreen cards={generateCardsForTables('p1', [2], false)} goalCount={20} scene={catScene} mode="tables" onFinish={() => {}} />)
+    expect(screen.queryByRole('button', { name: 'Domů' })).toBeNull()
+  })
+
+  it('App returns home without persisting the abandoned session or its answers', async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.deleteDatabase('nasobik')
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
+    const { profile, cards } = await bootstrapDefaultProfile()
+    render(<App />)
+    await userEvent.click(await screen.findByRole('button', { name: /Násobení/ }))
+    const heading = screen.getByRole('heading', { level: 1 })
+    const match = heading.textContent!.match(/(\d+)\s*([×÷])\s*(\d+)/)!
+    const answer = match[2] === '×' ? Number(match[1]) * Number(match[3]) : Number(match[1]) / Number(match[3])
+    await userEvent.keyboard(String(answer) + '{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Domů' }))
+    expect(await screen.findByRole('button', { name: /Násobení/ })).toBeInTheDocument()
+    const db = await openDb()
+    try {
+      expect(await getSessionsForProfile(db, profile.id)).toHaveLength(0)
+      expect(await getCardsForProfile(db, profile.id)).toEqual(expect.arrayContaining(cards))
+      expect((await getCardsForProfile(db, profile.id)).every(c => c.box === 1)).toBe(true)
+    } finally {
+      db.close()
+    }
+  })
+})

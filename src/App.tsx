@@ -211,6 +211,7 @@ export default function App() {
         goalCount={catScene.goalCount}
         scene={catScene}
         onFinish={onFinish}
+        onExit={() => setPhase('home')}
       />
     )
   }

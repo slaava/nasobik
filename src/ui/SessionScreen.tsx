@@ -9,7 +9,7 @@ import type { Card, GameMode } from '../core/types'
 import { expectedAnswer, formatQuestion, formatAnswer } from '../core/cards'
 import type { Scene } from '../scenes/types'
 import { Numpad } from './Numpad'
-import { MoonIcon, SunIcon } from './icons'
+import { HomeIcon, MoonIcon, SunIcon } from './icons'
 
 type Props = {
   cards: Card[]
@@ -18,11 +18,14 @@ type Props = {
   mode: GameMode
   profileId?: string
   onFinish: (state: SessionState) => void
+  // Abandon the session and go back to the home screen. Nothing is persisted:
+  // an abandoned session must not touch Leitner boxes or stats.
+  onExit?: () => void
 }
 
 const MODE_LABEL: Record<GameMode, string> = { tables: 'Násobení', arith: 'Sčítání a odčítání', clock: 'Hodiny' }
 
-export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFinish }: Props) {
+export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFinish, onExit }: Props) {
   const [state, dispatch] = useReducer(sessionReducer, initSessionState())
   const [input, setInput] = useState('')
   const askedAtRef = useRef<number>(0)
@@ -141,7 +144,17 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
 
   return (
     <div className="flex flex-col h-dvh bg-paper overflow-hidden">
-      <header className="flex items-center justify-between px-4 pt-3"><span className="font-bold text-ink text-sm whitespace-nowrap">{MODE_LABEL[mode]}</span><Container {...sceneCtx} /></header>
+      <header className="flex items-center justify-between px-4 pt-3">
+        <div className="flex items-center min-w-0">
+          {onExit && (
+            <button type="button" onClick={onExit} aria-label="Domů" className="text-ink -ml-2 mr-1 p-2">
+              <HomeIcon className="w-7 h-7" />
+            </button>
+          )}
+          <span className="font-bold text-ink text-sm whitespace-nowrap">{MODE_LABEL[mode]}</span>
+        </div>
+        <Container {...sceneCtx} />
+      </header>
       <div className="flex flex-col lg:flex-row flex-1 min-h-0">
         <section className={`flex flex-col items-center px-4 pt-2 lg:order-2 lg:basis-1/2 lg:h-full lg:max-h-none lg:justify-center lg:pt-0 ${hasVisual ? 'flex-1 min-h-0 justify-center' : 'shrink-0 justify-center max-h-[36dvh]'}`}>
           <div className="flex flex-col items-center space-y-2 min-w-0">

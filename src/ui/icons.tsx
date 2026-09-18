@@ -71,3 +71,13 @@ export function BackspaceIcon(p: IconProps) {
     </Svg>
   )
 }
+
+export function HomeIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M3.5 11.5L12 4l8.5 7.5" />
+      <path d="M5.5 10v10h13V10" />
+      <path d="M10 20v-6h4v6" />
+    </Svg>
+  )
+}
