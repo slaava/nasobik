@@ -12,7 +12,7 @@ export async function bootstrapDefaultProfile(): Promise<{ profile: Profile; car
     profile = {
       id: DEFAULT_ID,
       name: 'Emička',
-      avatar: '🐝',
+      avatar: 'cat',
       createdAt: Date.now(),
       unlockedTables: [1, 2, 5, 10],
       selectedScene: 'cat',

@@ -9,6 +9,7 @@ import type { Card, GameMode } from '../core/types'
 import { expectedAnswer, formatQuestion, formatAnswer } from '../core/cards'
 import type { Scene } from '../scenes/types'
 import { Numpad } from './Numpad'
+import { MoonIcon, SunIcon } from './icons'
 
 type Props = {
   cards: Card[]
@@ -151,7 +152,7 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
           {card.op === 'clk-12to24' && (
             <div className="flex flex-col items-center space-y-1">
               <ClockFace hour={card.a - 12} minute={card.b} showMinuteRing={false} className="h-[24dvh] w-[24dvh] max-w-[44vw] lg:h-64 lg:w-64" />
-              <span className="text-sm lg:text-lg text-ink font-semibold">{dayPart.icon} {dayPart.label}</span>
+              <span className="flex items-center text-sm lg:text-lg text-ink font-semibold">{card.a < 18 ? <SunIcon className="w-5 h-5 mr-1" /> : <MoonIcon className="w-5 h-5 mr-1" />}{dayPart.label}</span>
             </div>
           )}
         </section>

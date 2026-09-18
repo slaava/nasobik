@@ -32,7 +32,7 @@ function SessionDots({ correctCount, goalCount }: SceneCtx) {
 export const catScene: Scene = {
   id: 'cat',
   name: 'Kočka',
-  thumbnail: '🐱',
+  thumbnail: 'cat',
   goalCount: 20,
   Hero: CatHero,
   Container: SessionDots,

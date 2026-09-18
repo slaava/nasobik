@@ -4,7 +4,7 @@ export type CatMood = 'neutral' | 'happy' | 'surprised'
 
 // Czech, child-facing. `{name}` is replaced by the child's name.
 export const PHRASES: Record<CatEvent, readonly string[]> = {
-  greeting: ['Ahoj, {name}! Co dneska?', 'Ahoj, {name}! Jdeme na to?', 'Ahoj! Jednu hru?', 'Ahoj, {name}! Mám chuť… na počítání!'],
+  greeting: ['Ahoj, {name}! Co dneska?', 'Ahoj, {name}! Jdeme na to?', 'Ahoj, {name}! Jednu hru?', 'Ahoj, {name}! Mám chuť… na počítání!'],
   correct: ['Přesně tak!', 'Jo, to je ono.', 'Správně!', 'Mňau, dobrý.', 'Tu už znáš.'],
   streak: ['Tři v řadě!', 'Jedeš jak drak.', 'Nezastavitelná!', 'Tohle ti jde.'],
   wrong: ['Hm, skoro. Zkus to napsat.', 'Nevadí, příště to bude.', 'Mrkni, jak to je, a napiš to.', 'To se stane i mně.'],

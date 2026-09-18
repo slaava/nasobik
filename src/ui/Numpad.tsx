@@ -4,6 +4,8 @@ type Props = {
   onSubmit: () => void
 }
 
+import { BackspaceIcon, CheckIcon } from './icons'
+
 const KEYS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
 export function Numpad({ onDigit, onClear, onSubmit }: Props) {
@@ -29,7 +31,7 @@ export function Numpad({ onDigit, onClear, onSubmit }: Props) {
         className={`${utilClass} bg-card border-ink text-ink`}
         aria-label="Smazat"
       >
-        ⌫
+        <BackspaceIcon className="inline-block w-6 h-6 [@media(min-height:760px)]:w-7 [@media(min-height:760px)]:h-7" />
       </button>
       <button
         type="button"
@@ -44,7 +46,7 @@ export function Numpad({ onDigit, onClear, onSubmit }: Props) {
         className={`${utilClass} bg-accent text-accent-fg border-accent`}
         aria-label="Hotovo"
       >
-        ✓
+        <CheckIcon className="inline-block w-6 h-6 [@media(min-height:760px)]:w-7 [@media(min-height:760px)]:h-7" />
       </button>
     </div>
   )
