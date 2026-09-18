@@ -143,21 +143,21 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
     <div className="flex flex-col h-dvh bg-paper overflow-hidden">
       <header className="flex items-center justify-between px-4 pt-3"><span className="font-bold text-ink text-sm whitespace-nowrap">{MODE_LABEL[mode]}</span><Container {...sceneCtx} /></header>
       <div className="flex flex-col lg:flex-row flex-1 min-h-0">
-        <section className={`flex items-center shrink-0 px-4 pt-2 lg:order-2 lg:basis-1/2 lg:h-full lg:max-h-none lg:space-y-6 lg:pt-0 ${hasVisual ? 'flex-row justify-center space-x-4 lg:space-x-0 lg:flex-col max-h-[38dvh]' : 'flex-col justify-center space-y-2 max-h-[36dvh]'}`}>
+        <section className={`flex flex-col items-center px-4 pt-2 lg:order-2 lg:basis-1/2 lg:h-full lg:max-h-none lg:justify-center lg:pt-0 ${hasVisual ? 'flex-1 min-h-0 justify-center' : 'shrink-0 justify-center max-h-[36dvh]'}`}>
           <div className="flex flex-col items-center space-y-2 min-w-0">
             <Hero {...sceneCtx} />
           </div>
-          {card.op === 'clk-read' && <ClockFace hour={card.a} minute={card.b} showMinuteRing className="h-[26dvh] w-[26dvh] max-w-[44vw] lg:h-64 lg:w-64 shrink-0" />}
-          {card.op === 'clk-24to12' && <DigitalDisplay value={card.a * 100 + card.b} className="text-4xl lg:text-6xl" />}
+          {card.op === 'clk-read' && <ClockFace hour={card.a} minute={card.b} showMinuteRing className="mt-3 h-[42vh] w-[42vh] max-w-[80vw] max-h-[80vw] lg:h-72 lg:w-72 shrink-0" />}
+          {card.op === 'clk-24to12' && <DigitalDisplay value={card.a * 100 + card.b} className="mt-6 text-5xl lg:text-6xl" />}
           {card.op === 'clk-12to24' && (
-            <div className="flex flex-col items-center space-y-1">
-              <ClockFace hour={card.a - 12} minute={card.b} showMinuteRing={false} className="h-[24dvh] w-[24dvh] max-w-[44vw] lg:h-64 lg:w-64" />
+            <div className="flex flex-col items-center space-y-1 mt-3">
+              <ClockFace hour={card.a - 12} minute={card.b} showMinuteRing={false} className="h-[38vh] w-[38vh] max-w-[80vw] max-h-[80vw] lg:h-72 lg:w-72" />
               <span className="flex items-center text-sm lg:text-lg text-ink font-semibold">{card.a < 18 ? <SunIcon className="w-5 h-5 mr-1" /> : <MoonIcon className="w-5 h-5 mr-1" />}{dayPart.label}</span>
             </div>
           )}
         </section>
 
-        <section className="flex-1 min-h-0 overflow-hidden flex flex-col items-center justify-end space-y-2 px-4 pb-3 lg:order-1 lg:basis-1/2 lg:justify-center lg:pb-0 lg:space-y-4 [@media(min-height:760px)]:space-y-3 [@media(min-height:760px)]:pb-4">
+        <section className={`min-h-0 overflow-hidden flex flex-col items-center justify-end space-y-2 px-4 pb-3 lg:order-1 lg:basis-1/2 lg:justify-center lg:pb-0 lg:space-y-4 [@media(min-height:760px)]:space-y-3 [@media(min-height:760px)]:pb-4 ${hasVisual ? 'flex-none lg:flex-1' : 'flex-1'}`}>
           <h1 className={`font-bold text-ink tabular-nums text-center ${clock ? 'text-2xl [@media(min-height:760px)]:text-3xl lg:text-4xl' : 'text-3xl [@media(min-height:760px)]:text-4xl lg:text-5xl'}`}>
             {clock ? formatQuestion(card) : `${formatQuestion(card)} = ?`}
           </h1>
