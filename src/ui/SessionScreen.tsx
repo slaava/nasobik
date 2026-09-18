@@ -145,13 +145,13 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
   return (
     <div className="flex flex-col h-dvh bg-paper overflow-hidden">
       <header className="flex items-center justify-between px-4 pt-3">
-        <div className="flex items-center min-w-0">
+        <div className="flex items-center min-w-0 mr-2">
           {onExit && (
             <button type="button" onClick={onExit} aria-label="Domů" className="text-ink -ml-2 mr-1 p-2">
               <HomeIcon className="w-7 h-7" />
             </button>
           )}
-          <span className="font-bold text-ink text-sm whitespace-nowrap">{MODE_LABEL[mode]}</span>
+          <span className="font-bold text-ink text-sm truncate">{MODE_LABEL[mode]}</span>
         </div>
         <Container {...sceneCtx} />
       </header>
