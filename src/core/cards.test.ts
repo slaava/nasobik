@@ -162,6 +162,7 @@ describe('clock cards and active decks', () => {
   it('formats all clock question prompts', () => {
     expect(CLOCK_OPS.map(op => formatQuestion(freshCard('p', op, 7, 30)))).toEqual([
       'Kolik je hodin?', 'půl osmé', 'půl osmé', 'Kolik ukazují ručičkové hodiny?', 'Napiš čas digitálně.',
+      'Je půl osmé.', 'Od 0:07 do 0:37',
     ])
     expect(opsForMode('clock')).toEqual(CLOCK_OPS)
   })

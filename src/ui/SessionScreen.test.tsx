@@ -247,6 +247,28 @@ describe('SessionScreen clocks', () => {
     expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
   })
 
+  it('takes minutes to the full hour as a plain number', async () => {
+    render(<SessionScreen {...props} cards={[freshCard('p1', 'clk-to-hour', 23, 40)]} />)
+    expect(screen.getByRole('heading')).toHaveTextContent('Je 23:40.')
+    expect(screen.getByText('Kolik minut chybí do půlnoci?')).toBeInTheDocument()
+    await userEvent.keyboard('30{Enter}')
+    expect(screen.getByText('Správně je 20 minut.')).toBeInTheDocument()
+    expect(screen.getByText('Napiš to číslo.')).toBeInTheDocument()
+    await userEvent.keyboard('20')
+    expect(screen.getByTestId('answer-input')).toHaveTextContent('20')
+  })
+
+  it('asks a duration and accepts the minutes without a colon', async () => {
+    render(<SessionScreen {...props} cards={[freshCard('p1', 'clk-duration', 1508, 32)]} />)
+    expect(screen.getByRole('heading')).toHaveTextContent('Od 15:08 do 15:40')
+    expect(screen.getByText(/^Kolik minut/)).toBeInTheDocument()
+    expect(screen.queryByTestId('clock-face')).toBeNull()
+    await userEvent.keyboard('32')
+    expect(screen.getByTestId('answer-input')).toHaveTextContent('32')
+    await userEvent.keyboard('{Enter}')
+    expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
+  })
+
   it('explains an empty clock deck', () => {
     render(<SessionScreen {...props} cards={[]} />)
     expect(screen.getByText(/úroveň hodin/)).toBeInTheDocument()

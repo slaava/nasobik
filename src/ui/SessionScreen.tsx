@@ -1,5 +1,5 @@
 import { streakOf } from '../core/progress'
-import { choiceOptionsFor, dayPartFor, formatClockInput, inputModeFor, isClockOp } from '../core/clock'
+import { answersInMinutes, choiceOptionsFor, clockHintFor, dayPartFor, formatClockInput, inputModeFor, isClockOp } from '../core/clock'
 import { ClockFace, DigitalDisplay } from './ClockFace'
 import { ChoiceButtons } from './ChoiceButtons'
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
@@ -143,7 +143,11 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
   }
 
   const clock = isClockOp(card.op)
-  const hasVisual = clock && card.op !== 'clk-phrase' && card.op !== 'clk-phrase-dig'
+  const hasVisual = card.op === 'clk-read' || card.op === 'clk-24to12' || card.op === 'clk-12to24'
+  // Time-of-day answers are typed as digits and shown with a colon; minute
+  // answers (to-hour, duration) are plain numbers like the maths games.
+  const timeInput = clock && !answersInMinutes(card.op)
+  const hint = clockHintFor(card)
   const dayPart = dayPartFor(card.a)
   // The clock face takes what the answer area leaves: three choice buttons are
   // low, the numpad is tall. Fixed vh sizes keep old WebKit happy (no flex
@@ -180,17 +184,16 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
           <h1 className={`font-bold text-ink tabular-nums text-center ${clock ? 'text-2xl [@media(min-height:760px)]:text-3xl lg:text-4xl' : 'text-3xl [@media(min-height:760px)]:text-4xl lg:text-5xl'}`}>
             {clock ? formatQuestion(card) : `${formatQuestion(card)} = ?`}
           </h1>
-          {card.op === 'clk-phrase' && <p className="text-sm [@media(min-height:760px)]:text-base text-ink">Který ciferník to ukazuje?</p>}
-          {card.op === 'clk-phrase-dig' && <p className="text-sm [@media(min-height:760px)]:text-base text-ink">Který digitální čas to je?</p>}
+          {hint && <p className="text-sm [@media(min-height:760px)]:text-base text-ink text-center">{hint}</p>}
 
           {inputMode === 'keypad' && <div data-testid="answer-input" className="text-2xl [@media(min-height:760px)]:text-3xl lg:text-4xl font-mono border-b-[3px] border-accent bg-transparent px-4 py-1.5 [@media(min-height:760px)]:px-5 [@media(min-height:760px)]:py-2 lg:px-6 lg:py-3 min-w-[5rem] text-center text-ink tabular-nums min-h-[2.75rem] [@media(min-height:760px)]:min-h-[3.5rem] lg:min-h-[4rem]">
-            {clock ? formatClockInput(input) : input || ' '}
+            {timeInput ? formatClockInput(input) : input || ' '}
           </div>}
 
           {state.phase === 'showing-correction' && (
             <div className="text-base [@media(min-height:760px)]:text-lg lg:text-xl text-ink font-semibold text-center">
               <div>Správně je {formatAnswer(card, expectedAnswer(card))}.</div>
-              <div className="text-xs [@media(min-height:760px)]:text-sm text-ink">{inputMode !== 'keypad' ? 'Klepni na správnou odpověď.' : clock ? 'Napiš ten čas.' : 'Napiš to číslo.'}</div>
+              <div className="text-xs [@media(min-height:760px)]:text-sm text-ink">{inputMode !== 'keypad' ? 'Klepni na správnou odpověď.' : timeInput ? 'Napiš ten čas.' : 'Napiš to číslo.'}</div>
             </div>
           )}
 

@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { CLOCK_LEVELS, cardsForClockLevel, clockLevelOf, phraseFor, inputModeFor, choiceOptionsFor, formatTime, formatClockInput, dayPartFor } from './clock'
-import { freshCard } from './cards'
+import { CLOCK_LEVELS, cardsForClockLevel, clockLevelOf, phraseFor, inputModeFor, choiceOptionsFor, formatTime, formatClockInput, dayPartFor, clockHintFor, minutesLabel, answersInMinutes } from './clock'
+import { freshCard, expectedAnswer, formatQuestion, formatAnswer } from './cards'
 
 const seq = (...vals: number[]) => { let i = 0; return () => vals[i++ % vals.length]! }
 
 describe('clock domain', () => {
   it('generates each level with unique cards and round-trips every level', () => {
-    const counts = [12, 12, 24, 96, 96, 44]
+    const counts = [12, 12, 24, 96, 96, 44, 44, 31]
     const ids: string[] = []
     CLOCK_LEVELS.forEach((level, i) => {
       const cards = cardsForClockLevel('p', level)
@@ -53,5 +53,42 @@ describe('clock domain', () => {
     expect(['', '7', '73', '730', '1930'].map(formatClockInput)).toEqual([' ', '7', '73', '7:30', '19:30'])
     expect(dayPartFor(15)).toEqual({ label: 'odpoledne', icon: '☀️' })
     expect(dayPartFor(19)).toEqual({ label: 'večer', icon: '🌙' })
+  })
+
+  it('asks minutes to the next full hour, noon and midnight like the workbook', () => {
+    const q = (a: number, b: number) => {
+      const c = freshCard('p', 'clk-to-hour', a, b)
+      return [formatQuestion(c), clockHintFor(c), expectedAnswer(c)]
+    }
+    expect(q(11, 15)).toEqual(['Je čtvrt na dvanáct.', 'Kolik minut chybí do poledne?', 45])
+    expect(q(11, 30)).toEqual(['Je půl dvanácté.', 'Kolik minut chybí do poledne?', 30])
+    expect(q(23, 40)).toEqual(['Je 23:40.', 'Kolik minut chybí do půlnoci?', 20])
+    expect(q(8, 5)).toEqual(['Je 8:05.', 'Kolik minut chybí do 9:00?', 55])
+    expect(q(15, 45)).toEqual(['Je 15:45.', 'Kolik minut chybí do 16:00?', 15])
+    for (const c of cardsForClockLevel('p', 'to-hour')) {
+      expect(inputModeFor(c)).toBe('keypad')
+      expect(answersInMinutes(c.op)).toBe(true)
+    }
+  })
+
+  it('asks durations inside one hour, to the minute and across the full hour', () => {
+    const cards = cardsForClockLevel('p', 'duration')
+    const byText = new Map(cards.map(c => [formatQuestion(c), expectedAnswer(c)]))
+    expect(byText.get('Od 15:00 do 15:15')).toBe(15)
+    expect(byText.get('Od 15:08 do 15:40')).toBe(32)
+    expect(byText.get('Od 13:40 do 14:10')).toBe(30)
+    expect([...byText.values()]).toContain(60)
+    for (const c of cards) {
+      const [from, to] = formatQuestion(c).replace('Od ', '').split(' do ').map(t => t.split(':').map(Number))
+      expect((to![0]! * 60 + to![1]!) - (from![0]! * 60 + from![1]!)).toBe(expectedAnswer(c))
+      expect(expectedAnswer(c)).toBeGreaterThanOrEqual(5)
+      expect(clockHintFor(c)).toMatch(/^Kolik minut .*\?$/)
+    }
+    expect(cards.filter(c => c.a % 100 + c.b > 60).length).toBeGreaterThanOrEqual(8)
+  })
+
+  it('formats minute answers in Czech', () => {
+    expect([1, 3, 5, 20, 60].map(minutesLabel)).toEqual(['1 minuta', '3 minuty', '5 minut', '20 minut', '60 minut'])
+    expect(formatAnswer(freshCard('p', 'clk-to-hour', 23, 40), 20)).toBe('20 minut')
   })
 })

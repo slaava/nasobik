@@ -17,7 +17,9 @@ export type Profile = {
 // For mul/div we store a as the table number (divisor) and b as the multiplier, so
 // the two ops form a clean pair per (a, b) fact with independent Leitner state.
 // clk-phrase: Czech phrase → pick the matching analog clock; clk-phrase-dig: the same phrase → pick the digital time.
-export type CardOp = 'mul' | 'div' | 'add' | 'sub' | 'clk-read' | 'clk-phrase' | 'clk-phrase-dig' | 'clk-24to12' | 'clk-12to24'
+// clk-to-hour: a = hour, b = minute of the given time; answer = minutes left to the next full hour.
+// clk-duration: a = start time as hh*100+mm, b = length in minutes; answer = b.
+export type CardOp = 'mul' | 'div' | 'add' | 'sub' | 'clk-read' | 'clk-phrase' | 'clk-phrase-dig' | 'clk-24to12' | 'clk-12to24' | 'clk-to-hour' | 'clk-duration'
 export type GameMode = 'tables' | 'arith' | 'clock'
 
 export type Card = {
@@ -50,4 +52,4 @@ export type Session = {
   answers: AnswerEvent[]
 }
 
-export type ClockLevel = 'hours' | 'half' | 'quarter' | 'phrase' | 'five' | 'digital'
+export type ClockLevel = 'hours' | 'half' | 'quarter' | 'phrase' | 'five' | 'digital' | 'to-hour' | 'duration'

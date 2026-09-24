@@ -98,13 +98,13 @@ describe('arithmetic settings', () => {
   })
 })
 
-it('shows six clock levels, retained mastery and both clock toggles', async () => {
+it('shows eight clock levels, retained mastery and both clock toggles', async () => {
   const cards = cardsForClockLevel('p1', 'hours')
   cards.slice(0, 3).forEach(c => { c.box = 4 })
   const onToggleClock = vi.fn()
   const onToggleClockLevel = vi.fn()
   render(<ParentSettings {...baseProps} cards={cards} onToggleClock={onToggleClock} onToggleClockLevel={onToggleClockLevel} />)
-  expect(screen.getAllByRole('checkbox', { name: /^Úroveň / })).toHaveLength(6)
+  expect(screen.getAllByRole('checkbox', { name: /^Úroveň / })).toHaveLength(8)
   expect(screen.getByText('3 / 12 umí')).toBeInTheDocument()
   await userEvent.click(screen.getByLabelText('Úroveň Půlhodiny'))
   expect(onToggleClockLevel).toHaveBeenCalledWith('half')

@@ -1,4 +1,4 @@
-import { isClockOp, formatTime, phraseFor, clockLevelOf, cardsForClockLevel } from './clock'
+import { isClockOp, formatTime, phraseFor, clockLevelOf, cardsForClockLevel, answersInMinutes, minutesLabel } from './clock'
 import type { Card, CardOp, GameMode, Profile } from './types'
 
 export function cardId(profileId: string, op: CardOp, a: number, b: number): string {
@@ -9,6 +9,8 @@ export function cardId(profileId: string, op: CardOp, a: number, b: number): str
 }
 
 export function expectedAnswer(card: Card): number {
+  if (card.op === 'clk-to-hour') return 60 - card.b
+  if (card.op === 'clk-duration') return card.b
   if (isClockOp(card.op)) return (card.op === 'clk-24to12' ? card.a - 12 : card.a) * 100 + card.b
   if (card.op === 'add') return card.a + card.b
   if (card.op === 'sub') return card.a - card.b
@@ -20,6 +22,15 @@ export function formatQuestion(card: Card): string {
   if (card.op === 'clk-phrase' || card.op === 'clk-phrase-dig') return phraseFor(card.a, card.b)
   if (card.op === 'clk-24to12') return 'Kolik ukazují ručičkové hodiny?'
   if (card.op === 'clk-12to24') return 'Napiš čas digitálně.'
+  if (card.op === 'clk-to-hour') {
+    // Quarter times before noon read as the workbook does: "Je čtvrt na dvanáct."
+    return 'Je ' + (card.a < 12 && [15, 30, 45].includes(card.b) ? phraseFor(card.a, card.b) : formatTime(card.a * 100 + card.b)) + '.'
+  }
+  if (card.op === 'clk-duration') {
+    const endMin = Math.floor(card.a / 100) * 60 + card.a % 100 + card.b
+    const end = Math.floor(endMin / 60) * 100 + endMin % 60
+    return `Od ${formatTime(card.a)} do ${formatTime(end)}`
+  }
   if (card.op === 'add') return `${card.a} + ${card.b}`
   if (card.op === 'sub') return `${card.a} − ${card.b}`
   return card.op === 'div' ? `${card.a * card.b} ÷ ${card.a}` : `${card.a} × ${card.b}`
@@ -75,7 +86,7 @@ export function generateArithCard(profileId: string, rng: () => number = Math.ra
   return freshCard(profileId, op, a, b)
 }
 
-export const CLOCK_OPS: readonly CardOp[] = ['clk-read', 'clk-phrase', 'clk-phrase-dig', 'clk-24to12', 'clk-12to24']
+export const CLOCK_OPS: readonly CardOp[] = ['clk-read', 'clk-phrase', 'clk-phrase-dig', 'clk-24to12', 'clk-12to24', 'clk-to-hour', 'clk-duration']
 
 export function isCorrectAnswer(card: Card, value: number): boolean {
   if (card.op === 'clk-read' || card.op === 'clk-phrase' || card.op === 'clk-phrase-dig') {
@@ -85,6 +96,7 @@ export function isCorrectAnswer(card: Card, value: number): boolean {
 }
 
 export function formatAnswer(card: Card, value: number): string {
+  if (answersInMinutes(card.op)) return minutesLabel(value)
   return isClockOp(card.op) ? formatTime(value) : String(value)
 }
 
