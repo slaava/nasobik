@@ -97,6 +97,26 @@ describe('SessionScreen arithmetic mode', () => {
     expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
   })
 
+  it.each([
+    ['add', 47, 25, '+', 72],
+    ['sub', 72, 25, '−', 47],
+  ] as const)('writes %s in columns with the answer under the line', async (op, a, b, sign, answer) => {
+    const card = { ...freshCard('p1', op, a, b), exposuresSinceLastSeen: 10 }
+    render(<SessionScreen mode="arith" profileId="p1" cards={[card]} goalCount={3} scene={catScene} onFinish={() => {}} />)
+    const problem = screen.getByTestId('column-problem')
+    expect(screen.getByRole('heading')).toHaveTextContent(`${a} ${sign} ${b}`)
+    expect(screen.getByTestId('column-a')).toHaveTextContent(String(a))
+    expect(screen.getByTestId('column-b')).toHaveTextContent(`${sign} ${b}`)
+    const input = screen.getByTestId('answer-input')
+    expect(problem).toContainElement(input)
+    expect(screen.getByTestId('column-b').compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByText(/= \?/)).toBeNull()
+    await userEvent.keyboard(String(answer))
+    expect(input).toHaveTextContent(String(answer))
+    await userEvent.keyboard('{Enter}')
+    expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
+  })
+
   it('calls onFinish exactly once even when finished props change', async () => {
     const onFinish = vi.fn()
     const props = { mode: 'arith' as const, cards: [], goalCount: 1, scene: catScene, onFinish }

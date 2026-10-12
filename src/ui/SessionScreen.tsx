@@ -6,7 +6,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { sessionReducer, initSessionState } from '../core/session'
 import type { SessionState } from '../core/session'
 import type { Card, GameMode } from '../core/types'
-import { expectedAnswer, formatQuestion, formatAnswer } from '../core/cards'
+import { expectedAnswer, formatQuestion, formatAnswer, isArithOp } from '../core/cards'
 import type { Scene } from '../scenes/types'
 import { Numpad } from './Numpad'
 import { HomeIcon, MoonIcon, SunIcon } from './icons'
@@ -148,6 +148,9 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
   // answers (to-hour, duration) are plain numbers like the maths games.
   const timeInput = clock && !answersInMinutes(card.op)
   const hint = clockHintFor(card)
+  // Addition and subtraction are written in columns, as at school: operands
+  // right-aligned under each other, a sum line, the answer typed below it.
+  const column = isArithOp(card.op)
   const dayPart = dayPartFor(card.a)
   // The clock face takes what the answer area leaves: three choice buttons are
   // low, the numpad is tall. Fixed vh sizes keep old WebKit happy (no flex
@@ -181,14 +184,28 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
         </section>
 
         <section className={`min-h-0 overflow-hidden flex flex-col items-center justify-end space-y-2 px-4 pb-3 lg:order-1 lg:basis-1/2 lg:justify-center lg:pb-0 lg:space-y-4 [@media(min-height:760px)]:space-y-3 [@media(min-height:760px)]:pb-4 ${hasVisual ? 'flex-none lg:flex-1' : 'flex-1'}`}>
-          <h1 className={`font-bold text-ink tabular-nums text-center ${clock ? 'text-2xl [@media(min-height:760px)]:text-3xl lg:text-4xl' : 'text-3xl [@media(min-height:760px)]:text-4xl lg:text-5xl'}`}>
-            {clock ? formatQuestion(card) : `${formatQuestion(card)} = ?`}
-          </h1>
-          {hint && <p className="text-sm [@media(min-height:760px)]:text-base text-ink text-center">{hint}</p>}
+          {column ? (
+            <div data-testid="column-problem" className="flex flex-col items-end font-mono tabular-nums text-ink text-4xl [@media(min-height:760px)]:text-5xl lg:text-6xl min-w-[4.5ch]">
+              <h1 className="flex flex-col items-end w-full font-bold">
+                <span data-testid="column-a" className="block">{card.a}</span>{' '}
+                <span data-testid="column-b" className="flex items-baseline justify-between w-full border-b-[3px] border-ink pb-1">
+                  <span className="mr-3">{card.op === 'add' ? '+' : '−'}</span>{' '}<span>{card.b}</span>
+                </span>
+              </h1>
+              <div data-testid="answer-input" className="w-full text-right font-bold text-accent pt-1 min-h-[2.75rem] [@media(min-height:760px)]:min-h-[3.5rem] lg:min-h-[4.25rem]">
+                {input || ' '}
+              </div>
+            </div>
+          ) : (<>
+            <h1 className={`font-bold text-ink tabular-nums text-center ${clock ? 'text-2xl [@media(min-height:760px)]:text-3xl lg:text-4xl' : 'text-3xl [@media(min-height:760px)]:text-4xl lg:text-5xl'}`}>
+              {clock ? formatQuestion(card) : `${formatQuestion(card)} = ?`}
+            </h1>
+            {hint && <p className="text-sm [@media(min-height:760px)]:text-base text-ink text-center">{hint}</p>}
 
-          {inputMode === 'keypad' && <div data-testid="answer-input" className="text-2xl [@media(min-height:760px)]:text-3xl lg:text-4xl font-mono border-b-[3px] border-accent bg-transparent px-4 py-1.5 [@media(min-height:760px)]:px-5 [@media(min-height:760px)]:py-2 lg:px-6 lg:py-3 min-w-[5rem] text-center text-ink tabular-nums min-h-[2.75rem] [@media(min-height:760px)]:min-h-[3.5rem] lg:min-h-[4rem]">
-            {timeInput ? formatClockInput(input) : input || ' '}
-          </div>}
+            {inputMode === 'keypad' && <div data-testid="answer-input" className="text-2xl [@media(min-height:760px)]:text-3xl lg:text-4xl font-mono border-b-[3px] border-accent bg-transparent px-4 py-1.5 [@media(min-height:760px)]:px-5 [@media(min-height:760px)]:py-2 lg:px-6 lg:py-3 min-w-[5rem] text-center text-ink tabular-nums min-h-[2.75rem] [@media(min-height:760px)]:min-h-[3.5rem] lg:min-h-[4rem]">
+              {timeInput ? formatClockInput(input) : input || ' '}
+            </div>}
+          </>)}
 
           {state.phase === 'showing-correction' && (
             <div className="text-base [@media(min-height:760px)]:text-lg lg:text-xl text-ink font-semibold text-center">
