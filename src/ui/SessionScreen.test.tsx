@@ -1,7 +1,7 @@
 import { cardsForClockLevel, formatTime } from '../core/clock'
 import { freshCard } from '../core/cards'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SessionScreen } from './SessionScreen'
 import { generateCardsForTables, generateArithCard } from '../core/cards'
@@ -71,6 +71,8 @@ describe('SessionScreen', () => {
   })
 })
 
+const unitsFirst = (n: number) => String(n).split('').reverse().join('')
+
 describe('SessionScreen arithmetic mode', () => {
   it('generates a question for an empty deck and a correct answer advances the dots', async () => {
     render(
@@ -90,7 +92,8 @@ describe('SessionScreen arithmetic mode', () => {
     const a = Number(match[1])
     const b = Number(match[3])
     const answer = match[2] === '+' ? a + b : a - b
-    for (const digit of String(answer)) {
+    // Column boxes fill units first, so the digits go in reversed.
+    for (const digit of unitsFirst(answer)) {
       await userEvent.click(screen.getByRole('button', { name: digit }))
     }
     await userEvent.click(screen.getByRole('button', { name: /hotovo/i }))
@@ -98,22 +101,38 @@ describe('SessionScreen arithmetic mode', () => {
   })
 
   it.each([
-    ['add', 47, 25, '+', 72],
-    ['sub', 72, 25, '−', 47],
-  ] as const)('writes %s in columns with the answer under the line', async (op, a, b, sign, answer) => {
+    ['add', 47, 25, '+', 72, 3],
+    ['sub', 72, 25, '−', 47, 2],
+  ] as const)('writes %s in columns with answer boxes filled from the units', async (op, a, b, sign, answer, boxes) => {
     const card = { ...freshCard('p1', op, a, b), exposuresSinceLastSeen: 10 }
     render(<SessionScreen mode="arith" profileId="p1" cards={[card]} goalCount={3} scene={catScene} onFinish={() => {}} />)
-    const problem = screen.getByTestId('column-problem')
     expect(screen.getByRole('heading')).toHaveTextContent(`${a} ${sign} ${b}`)
     expect(screen.getByTestId('column-a')).toHaveTextContent(String(a))
     expect(screen.getByTestId('column-b')).toHaveTextContent(`${sign} ${b}`)
-    const input = screen.getByTestId('answer-input')
-    expect(problem).toContainElement(input)
-    expect(screen.getByTestId('column-b').compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.queryByText(/= \?/)).toBeNull()
-    await userEvent.keyboard(String(answer))
-    expect(input).toHaveTextContent(String(answer))
+    const cells = within(screen.getByTestId('answer-cells')).getAllByRole('button')
+    expect(cells).toHaveLength(boxes)
+    expect(screen.getByRole('button', { name: 'jednotky' })).toHaveAttribute('data-active', 'true')
+    await userEvent.keyboard(unitsFirst(answer))
+    expect(cells.map(c => c.textContent).join('')).toBe(String(answer))
+    expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(0)
     await userEvent.keyboard('{Enter}')
+    expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
+  })
+
+  it('lets the child tap a box to fix a digit and refuses empty units', async () => {
+    const card = { ...freshCard('p1', 'add', 47, 25), exposuresSinceLastSeen: 10 }
+    render(<SessionScreen mode="arith" profileId="p1" cards={[card]} goalCount={3} scene={catScene} onFinish={() => {}} />)
+    await userEvent.click(screen.getByRole('button', { name: 'desítky' }))
+    await userEvent.click(screen.getByRole('button', { name: '7' }))
+    await userEvent.click(screen.getByRole('button', { name: /hotovo/i }))
+    expect(screen.queryByText(/Správně je/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'jednotky' })).toHaveAttribute('data-active', 'true')
+    await userEvent.click(screen.getByRole('button', { name: '3' }))
+    await userEvent.click(screen.getByRole('button', { name: 'jednotky' }))
+    await userEvent.click(screen.getByRole('button', { name: '2' }))
+    expect(screen.getByRole('button', { name: 'jednotky' })).toHaveTextContent('2')
+    await userEvent.click(screen.getByRole('button', { name: /hotovo/i }))
     expect(document.querySelectorAll('[data-dot="on"]')).toHaveLength(1)
   })
 
@@ -123,7 +142,7 @@ describe('SessionScreen arithmetic mode', () => {
     const { rerender } = render(<SessionScreen {...props} />)
     const match = screen.getByRole('heading').textContent!.match(/(\d+)\s*([+−])\s*(\d+)/)!
     const answer = match[2] === '+' ? Number(match[1]) + Number(match[3]) : Number(match[1]) - Number(match[3])
-    await userEvent.keyboard(String(answer) + '{Enter}')
+    await userEvent.keyboard(unitsFirst(answer) + '{Enter}')
     expect(onFinish).toHaveBeenCalledTimes(1)
     const replacement = vi.fn()
     rerender(<SessionScreen {...props} cards={[]} onFinish={replacement} />)
@@ -175,7 +194,7 @@ describe('App game selection and session persistence', () => {
     for (let i = 0; i < catScene.goalCount; i++) {
       const match = screen.getByRole('heading').textContent!.match(/(\d+)\s*([+−])\s*(\d+)/)!
       const answer = match[2] === '+' ? Number(match[1]) + Number(match[3]) : Number(match[1]) - Number(match[3])
-      for (const key of String(answer)) fireEvent.keyDown(window, { key })
+      for (const key of unitsFirst(answer)) fireEvent.keyDown(window, { key })
       fireEvent.keyDown(window, { key: 'Enter' })
     }
     await waitFor(() => expect(screen.getByRole('button', { name: /Hrát znovu/i })).toBeInTheDocument())

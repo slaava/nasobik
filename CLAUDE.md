@@ -46,6 +46,7 @@ The app is a small state machine over a Leitner spaced-repetition core. Layers, 
 - **No `dvh` without a vh fallback, no flex `gap`: Kindle WebKit.**
 
 - **`SessionScreen` calls `onFinish` exactly once.** It uses a `useRef` guard and depends only on `state.phase`. Adding `state` or `onFinish` to the dep array causes the session to be persisted twice (App re-renders → new closure → effect re-fires before phase flips to `summary`) and stats double-count. If you touch the effect, re-read the comment above the `finishedFiredRef`.
+- **Arith answers are typed units-first into boxes.** `add`/`sub` render as a column problem; the answer goes into one box per place value (`src/core/columns.ts`), cursor starts at the units and moves left, a tapped box takes the next digit, ✓ refuses empty units or inner gaps. Box count comes from the operands, never from the answer. Tests type arith answers reversed.
 - **Heatmap must filter to active mul/div.** Arith cards share the `a`/`b` fields; an `add` card `3+7` would otherwise collide with the `3×7` cell.
 - **No id tiebreak in `pickNext`.** `'10x1'.localeCompare('1x1')` puts multiples of 10 first (digit `0` < letter `x`). Ties are broken by the shuffle done at `START`.
 - **IndexedDB connections close before mutations on the same DB elsewhere.** `fake-indexeddb` blocks `deleteDatabase` while a handle is open. App code follows the same pattern in prod.

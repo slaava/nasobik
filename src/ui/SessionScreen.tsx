@@ -9,6 +9,8 @@ import type { Card, GameMode } from '../core/types'
 import { expectedAnswer, formatQuestion, formatAnswer, isArithOp } from '../core/cards'
 import type { Scene } from '../scenes/types'
 import { Numpad } from './Numpad'
+import { PLACE_NAMES, backspace, cellCountFor, cellValue, emptyCells, gapIndex, selectCell, typeDigit } from '../core/columns'
+import type { CellInput } from '../core/columns'
 import { HomeIcon, MoonIcon, SunIcon } from './icons'
 
 type Props = {
@@ -28,6 +30,8 @@ const MODE_LABEL: Record<GameMode, string> = { tables: 'Násobení', arith: 'Sč
 export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFinish, onExit }: Props) {
   const [state, dispatch] = useReducer(sessionReducer, initSessionState())
   const [input, setInput] = useState('')
+  // Addition/subtraction answer: one box per place value, filled units first.
+  const [cells, setCells] = useState<CellInput>(() => emptyCells(0))
   const askedAtRef = useRef<number>(0)
   // Random offset drawn once per session: phrases still change deterministically
   // with each answer (no reshuffle on re-render), but two sessions in a row do
@@ -51,7 +55,12 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
       // Clear the input when the reducer advances to a question (including correction).
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setInput('')
+      const current = state.currentCard
+      if (current && isArithOp(current.op)) setCells(emptyCells(cellCountFor(current)))
     }
+    // Keyed by card identity on purpose: a new card object with the same id
+    // (Leitner box update) must not wipe the boxes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.currentCard?.id, state.phase])
 
   // Fire onFinish exactly once when the session enters the finished phase.
@@ -68,6 +77,9 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
 
   const card = state.currentCard
   const inputMode = card ? inputModeFor(card) : 'keypad'
+  // Addition and subtraction are written in columns, as at school: operands
+  // right-aligned under each other, a sum line, the answer in boxes below it.
+  const column = !!card && isArithOp(card.op)
   // Options belong to the question, not its correction phase or Leitner box.
   const options = useMemo(() => card && isClockOp(card.op) ? choiceOptionsFor(card, Math.random) : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,8 +95,18 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
 
   const submit = () => {
     if (inputMode !== 'keypad') return
-    if (input === '') return
-    const value = Number(input)
+    let value: number
+    if (column) {
+      value = cellValue(cells) ?? -1
+      if (value < 0) {
+        // Incomplete answer: point at the box that still needs a digit.
+        setCells(prev => selectCell(prev, gapIndex(prev) ?? prev.cursor))
+        return
+      }
+    } else {
+      if (input === '') return
+      value = Number(input)
+    }
     if (state.phase === 'asking') {
       const rt = Date.now() - askedAtRef.current
       dispatch({ type: 'SUBMIT_ANSWER', value, rt })
@@ -92,15 +114,27 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
       dispatch({ type: 'CONFIRM_CORRECTION', value })
     }
     setInput('')
+    if (column && card) setCells(emptyCells(cellCountFor(card)))
+  }
+
+  const onDigit = (d: number) => {
+    if (column) setCells(prev => typeDigit(prev, d))
+    else setInput(prev => (prev.length < 4 ? prev + String(d) : prev))
+  }
+  const onClear = () => {
+    if (column) setCells(backspace)
+    else setInput(prev => prev.slice(0, -1))
   }
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (inputMode !== 'keypad') return
       if (/^[0-9]$/.test(e.key)) {
-        setInput(prev => (prev.length < 4 ? prev + e.key : prev))
+        onDigit(Number(e.key))
       } else if (e.key === 'Backspace') {
-        setInput(prev => prev.slice(0, -1))
+        onClear()
+      } else if (column && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        setCells(prev => selectCell(prev, Math.min(prev.cells.length - 1, Math.max(0, prev.cursor + (e.key === 'ArrowLeft' ? -1 : 1)))))
       } else if (e.key === 'Enter') {
         submit()
       }
@@ -108,7 +142,7 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input, state.phase, inputMode])
+  }, [input, cells, state.phase, inputMode, column])
 
   const sceneCtx = {
     correctCount: state.correctCount,
@@ -148,9 +182,6 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
   // answers (to-hour, duration) are plain numbers like the maths games.
   const timeInput = clock && !answersInMinutes(card.op)
   const hint = clockHintFor(card)
-  // Addition and subtraction are written in columns, as at school: operands
-  // right-aligned under each other, a sum line, the answer typed below it.
-  const column = isArithOp(card.op)
   const dayPart = dayPartFor(card.a)
   // The clock face takes what the answer area leaves: three choice buttons are
   // low, the numpad is tall. Fixed vh sizes keep old WebKit happy (no flex
@@ -185,15 +216,28 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
 
         <section className={`min-h-0 overflow-hidden flex flex-col items-center justify-end space-y-2 px-4 pb-3 lg:order-1 lg:basis-1/2 lg:justify-center lg:pb-0 lg:space-y-4 [@media(min-height:760px)]:space-y-3 [@media(min-height:760px)]:pb-4 ${hasVisual ? 'flex-none lg:flex-1' : 'flex-1'}`}>
           {column ? (
-            <div data-testid="column-problem" className="flex flex-col items-end font-mono tabular-nums text-ink text-4xl [@media(min-height:760px)]:text-5xl lg:text-6xl min-w-[4.5ch]">
-              <h1 className="flex flex-col items-end w-full font-bold">
-                <span data-testid="column-a" className="block">{card.a}</span>{' '}
-                <span data-testid="column-b" className="flex items-baseline justify-between w-full border-b-[3px] border-ink pb-1">
-                  <span className="mr-3">{card.op === 'add' ? '+' : '−'}</span>{' '}<span>{card.b}</span>
-                </span>
+            <div data-testid="column-problem" className="flex flex-col items-end font-mono tabular-nums text-ink text-4xl [@media(min-height:760px)]:text-5xl lg:text-6xl">
+              <h1 className="font-bold">
+                <DigitRow sign="" value={card.a} width={cells.cells.length} testId="column-a" />{' '}
+                <DigitRow sign={card.op === 'add' ? '+' : '−'} value={card.b} width={cells.cells.length} testId="column-b" underline />
               </h1>
-              <div data-testid="answer-input" className="w-full text-right font-bold text-accent pt-1 min-h-[2.75rem] [@media(min-height:760px)]:min-h-[3.5rem] lg:min-h-[4.25rem]">
-                {input || ' '}
+              <div data-testid="answer-cells" className="flex mt-2">
+                <span className="block w-[1.1em]" />
+                {cells.cells.map((digit, i) => {
+                  const active = i === cells.cursor
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      aria-label={PLACE_NAMES[cells.cells.length - 1 - i]}
+                      data-active={active ? 'true' : 'false'}
+                      onClick={() => setCells(prev => selectCell(prev, i))}
+                      className={`block w-[1.1em] h-[1.3em] ${i > 0 ? 'ml-1' : ''} rounded-lg bg-card font-bold text-ink text-center leading-none ${active ? 'border-[4px] border-accent' : 'border-[1.5px] border-ink'}`}
+                    >
+                      {digit}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           ) : (<>
@@ -215,8 +259,8 @@ export function SessionScreen({ cards, goalCount, scene, mode, profileId, onFini
           )}
 
           {inputMode === 'keypad' ? <Numpad
-            onDigit={d => setInput(prev => (prev.length < 4 ? prev + String(d) : prev))}
-            onClear={() => setInput(prev => prev.slice(0, -1))}
+            onDigit={onDigit}
+            onClear={onClear}
             onSubmit={submit}
           /> : <ChoiceButtons options={options} kind={inputMode === 'choice-digital' ? 'digital' : 'clock'} onPick={pick} />}
 
@@ -239,4 +283,17 @@ function lastEventOf(state: SessionState): 'correct' | 'wrong' | 'dunno' | 'idle
   if (state.answers.length === 0) return 'idle'
   const last = state.answers[state.answers.length - 1]!
   return last.correct ? 'correct' : last.rt === 0 ? 'dunno' : 'wrong'
+}
+
+// One operand of a column problem: the sign in its own slot, digits right-aligned
+// in fixed-width slots that line up with the answer boxes below.
+function DigitRow({ sign, value, width, testId, underline }: { sign: string; value: number; width: number; testId: string; underline?: boolean }) {
+  const digits = String(value).split('')
+  const slots = Array.from({ length: Math.max(0, width - digits.length) }, () => '').concat(digits)
+  return (
+    <span data-testid={testId} className={`flex ${underline ? 'border-b-[3px] border-ink pb-1' : ''}`}>
+      <span className="block w-[1.1em] text-left">{sign}</span>{sign ? ' ' : ''}
+      {slots.map((d, i) => <span key={i} className={`block w-[1.1em] ${i > 0 ? 'ml-1' : ''} text-center`}>{d}</span>)}
+    </span>
+  )
 }
